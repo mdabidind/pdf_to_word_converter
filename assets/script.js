@@ -1,8 +1,6 @@
-document.addEventListener('DOMContentLoaded', function() {
-    // Elements
+// Main conversion function with robust error handling
+function setupConverter() {
     const fileInput = document.getElementById('pdfFile');
-    const fileInputLabel = document.getElementById('fileInputLabel');
-    const fileNameDisplay = document.getElementById('fileNameDisplay');
     const convertBtn = document.getElementById('convertBtn');
     const statusDiv = document.getElementById('status');
     const downloadLink = document.getElementById('downloadLink');
@@ -11,81 +9,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // File selection handler
     fileInput.addEventListener('change', function() {
         if (this.files.length) {
-            const file = this.files[0];
-            fileNameDisplay.textContent = file.name;
+            document.getElementById('fileNameDisplay').textContent = this.files[0].name;
             convertBtn.disabled = false;
             statusDiv.textContent = '';
         }
     });
 
-    // Drag and drop functionality
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        fileInputLabel.addEventListener(eventName, preventDefaults, false);
-    });
-
-    ['dragenter', 'dragover'].forEach(eventName => {
-        fileInputLabel.addEventListener(eventName, highlight, false);
-    });
-
-    ['dragleave', 'drop'].forEach(eventName => {
-        fileInputLabel.addEventListener(eventName, unhighlight, false);
-    });
-
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function highlight() {
-        fileInputLabel.style.background = '#e1f0fa';
-        fileInputLabel.style.borderColor = '#2980b9';
-    }
-
-    function unhighlight() {
-        fileInputLabel.style.background = '#f8f9fa';
-        fileInputLabel.style.borderColor = '#3498db';
-    }
-
-    fileInputLabel.addEventListener('drop', function(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length) {
-            fileInput.files = files;
-            fileNameDisplay.textContent = files[0].name;
-            convertBtn.disabled = false;
-            statusDiv.textContent = '';
-        }
-    });
-
-    // Conversion handler
+    // Conversion handler with proper error catching
     convertBtn.addEventListener('click', async function() {
-        if (!fileInput.files.length) {
+        if (!fileInput.files || !fileInput.files.length) {
             showStatus('Please select a PDF file first', 'error');
             return;
         }
 
         const pdfFile = fileInput.files[0];
         
-        // Validate file size
-        if (pdfFile.size > 10 * 1024 * 1024) {
-            showStatus('File too large (max 10MB)', 'error');
-            return;
-        }
-
-        showStatus('Starting conversion...', 'info');
-        downloadLink.style.display = 'none';
-        convertBtn.disabled = true;
-
         try {
-            // Read PDF file
-            showStatus('Reading PDF...', 'info');
+            // Validate file
+            if (pdfFile.size > 10 * 1024 * 1024) {
+                throw new Error('File too large (max 10MB)');
+            }
+            if (!pdfFile.type.includes('pdf') && !pdfFile.name.toLowerCase().endsWith('.pdf')) {
+                throw new Error('Please select a PDF file');
+            }
+
+            showStatus('Starting conversion...', 'info');
+            convertBtn.disabled = true;
+            downloadLink.style.display = 'none';
+
+            // Read file
             const pdfData = await readFileAsArrayBuffer(pdfFile);
             
             // Process PDF
-            showStatus('Processing content...', 'info');
             const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
-            
-            // Create Word document
             const doc = new docx.Document();
             const paragraphs = [];
             
@@ -107,7 +63,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Create download
             const fileName = pdfFile.name.replace(/\.pdf$/i, '') + '.docx';
-            downloadBtn.href = URL.createObjectURL(docxBlob);
+            const objectUrl = URL.createObjectURL(docxBlob);
+            
+            downloadBtn.onclick = function() {
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 100);
+            };
+            downloadBtn.href = objectUrl;
             downloadBtn.download = fileName;
             downloadBtn.querySelector('span').textContent = `Download ${fileName}`;
             downloadLink.style.display = 'flex';
@@ -122,6 +83,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Helper functions
     function readFileAsArrayBuffer(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -133,6 +95,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showStatus(message, type) {
         statusDiv.textContent = message;
-        statusDiv.className = type;
+        statusDiv.className = type || 'info';
     }
-});
+}
+
+// Initialize when libraries are ready
+if (typeof docx !== 'undefined' && typeof pdfjsLib !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', setupConverter);
+} else {
+    document.getElementById('status').textContent = 
+        'Error: Conversion libraries not loaded. Please refresh the page.';
+}
