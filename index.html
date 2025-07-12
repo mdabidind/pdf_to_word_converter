@@ -5,51 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDFToolsLover - PDF to Word Converter</title>
     <link rel="stylesheet" href="assets/style.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <div class="logo-header">
+        <div class="header">
             <h1>PDFToolsLover</h1>
             <h2>PDF to Word Converter</h2>
         </div>
 
-        <div class="converter-card">
-            <label for="pdfFile" class="file-upload-area">
-                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="17 8 12 3 7 8"></polyline>
-                    <line x1="12" y1="3" x2="12" y2="15"></line>
-                </svg>
-                <span id="fileLabel">Choose PDF file</span>
+        <div class="converter-box">
+            <label for="pdfFile" class="file-label" id="fileDropArea">
+                <span id="fileName">Choose PDF file</span>
                 <span class="file-size">Max 10MB</span>
                 <input type="file" id="pdfFile" accept=".pdf">
             </label>
 
-            <button id="convertBtn" class="convert-button" disabled>
-                <span class="button-text">Convert to Word</span>
-                <span class="button-icon">→</span>
+            <button id="convertBtn" disabled>
+                <span id="btnText">Convert to Word</span>
+                <span id="btnIcon">→</span>
+                <div id="progressBar" class="progress-bar"></div>
             </button>
 
-            <div id="status" class="status-message"></div>
+            <div id="status"></div>
 
-            <div id="downloadLink" class="download-area" style="display:none;">
-                <div class="download-ready">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                    </svg>
-                    <span>Conversion complete!</span>
-                </div>
-                <a id="docxDownload" class="download-button">
-                    Download Word File
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="7 10 12 15 17 10"></polyline>
-                        <line x1="12" y1="15" x2="12" y2="3"></line>
-                    </svg>
+            <div id="downloadLink" style="display:none;">
+                <a id="docxDownload" download class="download-btn">
+                    <span>Download Word File</span>
                 </a>
             </div>
         </div>
@@ -59,13 +40,14 @@
         </div>
     </div>
 
-    <!-- Load libraries -->
+    <!-- Load PDF.js with worker -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
-        pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 
-            'https://cdnjs.googleapis.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     </script>
+    
+    <!-- Load docx.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
     
     <!-- Main script -->
