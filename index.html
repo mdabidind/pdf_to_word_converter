@@ -96,99 +96,33 @@
         <a id="docxDownload" download>Download Word File</a>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Load docx.js first -->
     <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <!-- Then load PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
-        // Initialize PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        // Verify docx is loaded before proceeding
+        function checkDocxLoaded() {
+            if (typeof docx === 'undefined') {
+                document.getElementById('status').textContent = 'Error: Word library not loaded. Please refresh.';
+                document.getElementById('status').className = 'error';
+                setTimeout(checkDocxLoaded, 100);
+                return;
+            }
+            
+            // Initialize PDF.js after docx is confirmed loaded
+            pdfjsLib = window['pdfjs-dist/build/pdf'];
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+            
+            // Now load the main application logic
+            const script = document.createElement('script');
+            script.src = 'assets/script.js';
+            document.head.appendChild(script);
+        }
         
-        document.addEventListener('DOMContentLoaded', function() {
-            const pdfFile = document.getElementById('pdfFile');
-            const convertBtn = document.getElementById('convertBtn');
-            const statusDiv = document.getElementById('status');
-            const fileNameDiv = document.getElementById('fileName');
-            const downloadLink = document.getElementById('downloadLink');
-            const docxDownload = document.getElementById('docxDownload');
-            
-            // File selection handler
-            pdfFile.addEventListener('change', function() {
-                if (this.files && this.files.length > 0) {
-                    fileNameDiv.textContent = this.files[0].name;
-                    convertBtn.disabled = false;
-                    statusDiv.textContent = '';
-                    statusDiv.className = '';
-                    downloadLink.style.display = 'none';
-                }
-            });
-            
-            // Conversion handler
-            convertBtn.addEventListener('click', async function() {
-                if (!pdfFile.files || pdfFile.files.length === 0) {
-                    statusDiv.textContent = 'Please select a PDF file first';
-                    statusDiv.className = 'error';
-                    return;
-                }
-                
-                const file = pdfFile.files[0];
-                
-                try {
-                    // Start conversion
-                    statusDiv.textContent = 'Processing PDF...';
-                    statusDiv.className = 'processing';
-                    convertBtn.disabled = true;
-                    
-                    // Read PDF
-                    const arrayBuffer = await new Promise((resolve, reject) => {
-                        const reader = new FileReader();
-                        reader.onload = () => resolve(reader.result);
-                        reader.onerror = () => reject(new Error('Failed to read file'));
-                        reader.readAsArrayBuffer(file);
-                    });
-                    
-                    // Convert to Word
-                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-                    const doc = new docx.Document();
-                    
-                    for (let i = 1; i <= pdf.numPages; i++) {
-                        statusDiv.textContent = `Processing page ${i} of ${pdf.numPages}...`;
-                        const page = await pdf.getPage(i);
-                        const textContent = await page.getTextContent();
-                        const text = textContent.items.map(item => item.str).join('\n');
-                        
-                        doc.addSection({
-                            children: [new docx.Paragraph({
-                                children: [new docx.TextRun(text)]
-                            })]
-                        });
-                    }
-                    
-                    // Generate download
-                    const blob = await docx.Packer.toBlob(doc);
-                    const url = URL.createObjectURL(blob);
-                    const outputName = file.name.replace(/\.pdf$/i, '.docx');
-                    
-                    docxDownload.href = url;
-                    docxDownload.download = outputName;
-                    docxDownload.textContent = `Download ${outputName}`;
-                    downloadLink.style.display = 'block';
-                    
-                    statusDiv.textContent = 'Conversion complete! Ready to download.';
-                    statusDiv.className = 'success';
-                    
-                    // Clean up
-                    docxDownload.addEventListener('click', function() {
-                        setTimeout(() => URL.revokeObjectURL(url), 100);
-                    });
-                    
-                } catch (error) {
-                    statusDiv.textContent = `Error: ${error.message}`;
-                    statusDiv.className = 'error';
-                    console.error('Conversion error:', error);
-                } finally {
-                    convertBtn.disabled = false;
-                }
-            });
-        });
+        // Start checking for docx
+        checkDocxLoaded();
     </script>
 </body>
 </html>
