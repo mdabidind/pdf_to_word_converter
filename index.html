@@ -14,24 +14,11 @@
         </div>
 
         <div class="converter-box">
-            <label for="pdfFile" class="file-label" id="fileDropArea">
-                <span id="fileName">Choose PDF file</span>
-                <span class="file-size">Max 10MB</span>
-                <input type="file" id="pdfFile" accept=".pdf">
-            </label>
-
-            <button id="convertBtn" disabled>
-                <span id="btnText">Convert to Word</span>
-                <span id="btnIcon">→</span>
-                <div id="progressBar" class="progress-bar"></div>
-            </button>
-
+            <input type="file" id="pdfFile" accept=".pdf">
+            <button id="convertBtn" disabled>Convert to Word</button>
             <div id="status"></div>
-
             <div id="downloadLink" style="display:none;">
-                <a id="docxDownload" download class="download-btn">
-                    <span>Download Word File</span>
-                </a>
+                <a id="docxDownload" download>Download Word File</a>
             </div>
         </div>
 
@@ -40,15 +27,29 @@
         </div>
     </div>
 
-    <!-- Load PDF.js with worker -->
+    <!-- Load docx.js first from reliable CDN -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    
+    <!-- Then load PDF.js with worker -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
+        // Initialize PDF.js
+        pdfjsLib = window['pdfjs-dist/build/pdf'];
         pdfjsLib.GlobalWorkerOptions.workerSrc = 
             'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
+        // Verify libraries are loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof docx === 'undefined') {
+                document.getElementById('status').textContent = 
+                    'Error: Word conversion library failed to load. Please refresh the page.';
+            }
+            if (typeof pdfjsLib === 'undefined') {
+                document.getElementById('status').textContent = 
+                    'Error: PDF library failed to load. Please refresh the page.';
+            }
+        });
     </script>
-    
-    <!-- Load docx.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
     
     <!-- Main script -->
     <script src="assets/script.js"></script>
