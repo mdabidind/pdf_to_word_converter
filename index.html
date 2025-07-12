@@ -5,6 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDFToolsLover - PDF to Word Converter</title>
     <link rel="stylesheet" href="assets/style.css">
+    <style>
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loader-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -16,6 +36,10 @@
         <div class="converter-box">
             <input type="file" id="pdfFile" accept=".pdf">
             <button id="convertBtn" disabled>Convert to Word</button>
+            <div class="loader" id="libraryLoader">
+                <div class="loader-spinner"></div>
+                <p>Loading conversion tools...</p>
+            </div>
             <div id="status"></div>
             <div id="downloadLink" style="display:none;">
                 <a id="docxDownload" download>Download Word File</a>
@@ -27,31 +51,42 @@
         </div>
     </div>
 
-    <!-- Load docx.js first from reliable CDN -->
-    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
-    
-    <!-- Then load PDF.js with worker -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <!-- Load docx.js with fallback -->
     <script>
-        // Initialize PDF.js
-        pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        // Verify libraries are loaded
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof docx === 'undefined') {
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = callback;
+            script.onerror = function() {
                 document.getElementById('status').textContent = 
-                    'Error: Word conversion library failed to load. Please refresh the page.';
-            }
-            if (typeof pdfjsLib === 'undefined') {
-                document.getElementById('status').textContent = 
-                    'Error: PDF library failed to load. Please refresh the page.';
-            }
+                    'Failed to load required library. Please refresh the page.';
+                document.getElementById('libraryLoader').style.display = 'none';
+            };
+            document.head.appendChild(script);
+        }
+
+        // Show loading indicator
+        document.getElementById('libraryLoader').style.display = 'block';
+
+        // First try: Load from unpkg
+        loadScript('https://unpkg.com/docx@7.8.2/build/index.js', function() {
+            // Then load PDF.js
+            loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js', function() {
+                // Initialize PDF.js
+                pdfjsLib = window['pdfjs-dist/build/pdf'];
+                pdfjsLib.GlobalWorkerOptions.workerSrc = 
+                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+                
+                // Hide loader and enable UI
+                document.getElementById('libraryLoader').style.display = 'none';
+                document.getElementById('convertBtn').disabled = false;
+                
+                // Load main script
+                const script = document.createElement('script');
+                script.src = 'assets/script.js';
+                document.head.appendChild(script);
+            });
         });
     </script>
-    
-    <!-- Main script -->
-    <script src="assets/script.js"></script>
 </body>
 </html>
