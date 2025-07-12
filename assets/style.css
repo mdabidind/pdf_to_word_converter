@@ -67,7 +67,7 @@ body {
     cursor: pointer;
 }
 
-.file-name {
+#fileNameDisplay {
     margin-top: 10px;
     font-size: 14px;
     color: #3498db;
@@ -126,12 +126,10 @@ button:disabled {
 }
 
 .download-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    display: block;
     background: #27ae60;
     color: white;
+    text-align: center;
     padding: 12px;
     border-radius: 6px;
     text-decoration: none;
