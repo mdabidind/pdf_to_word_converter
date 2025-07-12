@@ -6,23 +6,39 @@
     <title>PDFToolsLover - PDF to Word Converter</title>
     <link rel="stylesheet" href="assets/style.css">
     <style>
-        .loader {
-            display: none;
+        /* Custom file input styling */
+        .file-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px dashed #3498db;
+            border-radius: 8px;
             text-align: center;
-            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
         }
-        .loader-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
+        .file-input-label:hover {
+            background: #e9f5fe;
+            border-color: #2980b9;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        #pdfFile {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+        .file-name {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #3498db;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -34,15 +50,31 @@
         </div>
 
         <div class="converter-box">
-            <input type="file" id="pdfFile" accept=".pdf">
-            <button id="convertBtn" disabled>Convert to Word</button>
-            <div class="loader" id="libraryLoader">
-                <div class="loader-spinner"></div>
-                <p>Loading conversion tools...</p>
+            <div class="file-input-container">
+                <label class="file-input-label" id="fileInputLabel">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <div>Click to choose PDF or drag & drop</div>
+                    <div class="file-size">Max 10MB</div>
+                </label>
+                <input type="file" id="pdfFile" accept=".pdf">
+                <div id="fileNameDisplay" class="file-name"></div>
             </div>
+
+            <button id="convertBtn" disabled>Convert to Word</button>
             <div id="status"></div>
             <div id="downloadLink" style="display:none;">
-                <a id="docxDownload" download>Download Word File</a>
+                <a id="docxDownload" download class="download-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    <span>Download Word File</span>
+                </a>
             </div>
         </div>
 
@@ -51,42 +83,17 @@
         </div>
     </div>
 
-    <!-- Load docx.js with fallback -->
+    <!-- Load libraries -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
-        function loadScript(src, callback) {
-            const script = document.createElement('script');
-            script.src = src;
-            script.onload = callback;
-            script.onerror = function() {
-                document.getElementById('status').textContent = 
-                    'Failed to load required library. Please refresh the page.';
-                document.getElementById('libraryLoader').style.display = 'none';
-            };
-            document.head.appendChild(script);
-        }
-
-        // Show loading indicator
-        document.getElementById('libraryLoader').style.display = 'block';
-
-        // First try: Load from unpkg
-        loadScript('https://unpkg.com/docx@7.8.2/build/index.js', function() {
-            // Then load PDF.js
-            loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js', function() {
-                // Initialize PDF.js
-                pdfjsLib = window['pdfjs-dist/build/pdf'];
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-                
-                // Hide loader and enable UI
-                document.getElementById('libraryLoader').style.display = 'none';
-                document.getElementById('convertBtn').disabled = false;
-                
-                // Load main script
-                const script = document.createElement('script');
-                script.src = 'assets/script.js';
-                document.head.appendChild(script);
-            });
-        });
+        // Initialize PDF.js
+        pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
     </script>
+    
+    <!-- Main script -->
+    <script src="assets/script.js"></script>
 </body>
 </html>
