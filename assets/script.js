@@ -1,36 +1,51 @@
-// Wait for DOM to be fully loaded
+// Debugging: Check if script is loaded
+console.log('Main script loaded');
+
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM fully loaded');
+    
     const fileInput = document.getElementById('pdfFile');
     const convertBtn = document.getElementById('convertBtn');
     const statusDiv = document.getElementById('status');
     const fileNameDisplay = document.getElementById('fileNameDisplay');
 
+    // Debug: Verify elements exist
+    console.log('File input:', fileInput);
+    console.log('Convert button:', convertBtn);
+
     // File selection handler
     fileInput.addEventListener('change', function() {
+        console.log('File input changed');
+        
         if (this.files && this.files.length > 0) {
+            console.log('File selected:', this.files[0].name);
+            
             // Display file name
             fileNameDisplay.textContent = this.files[0].name;
             
             // Enable convert button
             convertBtn.disabled = false;
+            console.log('Convert button enabled:', convertBtn.disabled);
             
             // Clear any previous status
             statusDiv.textContent = '';
-            
-            console.log('File selected, convert button enabled'); // Debug log
         } else {
             convertBtn.disabled = true;
+            console.log('No file selected, button disabled');
         }
     });
 
     // Conversion handler
     convertBtn.addEventListener('click', async function() {
+        console.log('Convert button clicked');
+        
         if (!fileInput.files || fileInput.files.length === 0) {
             showStatus('Please select a PDF file first', 'error');
             return;
         }
 
         const pdfFile = fileInput.files[0];
+        console.log('Starting conversion for:', pdfFile.name);
         
         try {
             // Start conversion
@@ -39,7 +54,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Read and process the PDF
             const pdfData = await readFileAsArrayBuffer(pdfFile);
+            console.log('PDF data loaded');
+            
             const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            console.log('PDF document loaded, pages:', pdf.numPages);
             
             // Create Word document
             const doc = new docx.Document();
@@ -62,12 +80,14 @@ document.addEventListener('DOMContentLoaded', function() {
             createDownloadLink(pdfFile.name, docxBlob);
             
             showStatus('Conversion complete!', 'success');
+            console.log('Conversion completed successfully');
             
         } catch (error) {
-            showStatus(`Error: ${error.message}`, 'error');
             console.error('Conversion error:', error);
+            showStatus(`Error: ${error.message}`, 'error');
         } finally {
             convertBtn.disabled = false;
+            console.log('Convert button re-enabled');
         }
     });
 
@@ -92,8 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
         };
         downloadBtn.href = url;
         downloadBtn.download = fileName;
-        downloadBtn.querySelector('span').textContent = `Download ${fileName}`;
-        downloadLink.style.display = 'flex';
+        downloadBtn.textContent = `Download ${fileName}`;
+        downloadLink.style.display = 'block';
     }
 
     function showStatus(message, type) {
