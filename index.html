@@ -47,42 +47,27 @@
         </div>
     </div>
 
-    <!-- Load libraries with error handling -->
+    <!-- Load libraries -->
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
-        function loadScript(src) {
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = src;
-                script.onload = resolve;
-                script.onerror = reject;
-                document.head.appendChild(script);
-            });
-        }
-
-        async function initializeApp() {
-            try {
-                // Load docx.js
-                await loadScript('https://unpkg.com/docx@7.8.2/build/index.js');
-                
-                // Load PDF.js
-                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js');
-                
-                // Initialize PDF.js
-                pdfjsLib = window['pdfjs-dist/build/pdf'];
-                pdfjsLib.GlobalWorkerOptions.workerSrc = 
-                    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-                
+        // Initialize PDF.js
+        pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
+        // Verify libraries are loaded
+        function checkLibraries() {
+            if (typeof docx !== 'undefined' && typeof pdfjsLib !== 'undefined') {
                 // Load main script
-                await loadScript('assets/script.js');
-                
-            } catch (error) {
-                document.getElementById('status').textContent = 
-                    'Error: Failed to load required libraries. Please refresh the page.';
-                console.error('Initialization error:', error);
+                const script = document.createElement('script');
+                script.src = 'assets/script.js';
+                document.head.appendChild(script);
+            } else {
+                setTimeout(checkLibraries, 100);
             }
         }
-
-        initializeApp();
+        checkLibraries();
     </script>
 </body>
 </html>
