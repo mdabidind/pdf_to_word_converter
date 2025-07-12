@@ -1,1 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PDFToolsLover - GitHub Converter</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { border: 2px dashed #3498db; padding: 30px; text-align: center; border-radius: 5px; }
+        #status { margin-top: 20px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>PDF to Word Converter</h1>
+    <p>Powered by GitHub Actions</p>
+    
+    <div class="container">
+        <input type="file" id="pdfUpload" accept=".pdf">
+        <button onclick="uploadPDF()">Convert to Word</button>
+        <div id="status"></div>
+    </div>
 
+    <script>
+        async function uploadPDF() {
+            const fileInput = document.getElementById('pdfUpload');
+            const status = document.getElementById('status');
+            
+            if (!fileInput.files.length) {
+                status.textContent = 'Please select a PDF file';
+                return;
+            }
+            
+            status.textContent = 'Uploading to GitHub...';
+            
+            try {
+                // In a real implementation, you would need to:
+                // 1. Upload to GitHub repo via API
+                // 2. Trigger workflow
+                // 3. Poll for completion
+                // 4. Download result
+                
+                status.textContent = 'This demo requires backend implementation. See README for full setup.';
+                
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
