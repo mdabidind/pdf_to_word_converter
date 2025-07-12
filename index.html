@@ -1,83 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDFToolsLover - PDF to Word Converter</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 500px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .file-input {
-            margin: 20px 0;
-            padding: 20px;
-            border: 2px dashed #3498db;
-            text-align: center;
-        }
-        button {
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            width: 100%;
-            cursor: pointer;
-        }
-        button:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        #status {
-            margin: 10px 0;
-            min-height: 20px;
-        }
-    </style>
-</head>
-<body>
-    <h1>PDFToolsLover</h1>
-    <h2>PDF to Word Converter</h2>
-    
-    <div class="file-input">
-        <input type="file" id="pdfFile" accept=".pdf">
-        <p>Max file size: 10MB</p>
-    </div>
-    
-    <button id="convertBtn" disabled>Convert to Word</button>
-    <div id="status"></div>
-    <div id="downloadLink" style="display:none;">
-        <a id="docxDownload" download>Download Word File</a>
-    </div>
-
+    <title>PDF to Word Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
     <script>
-        // Simple file input handler
-        document.getElementById('pdfFile').addEventListener('change', function(e) {
-            const convertBtn = document.getElementById('convertBtn');
-            if (e.target.files.length > 0) {
-                convertBtn.disabled = false;
-                document.getElementById('status').textContent = 'File selected: ' + e.target.files[0].name;
-            } else {
-                convertBtn.disabled = true;
-            }
-        });
-
-        // Simple conversion handler
-        document.getElementById('convertBtn').addEventListener('click', function() {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+        
+        document.addEventListener('DOMContentLoaded', function() {
             const fileInput = document.getElementById('pdfFile');
-            if (!fileInput.files || fileInput.files.length === 0) {
-                document.getElementById('status').textContent = 'Please select a file first';
-                return;
-            }
+            const convertBtn = document.getElementById('convertBtn');
             
-            document.getElementById('status').textContent = 'Conversion started...';
+            fileInput.addEventListener('change', function() {
+                convertBtn.disabled = !this.files.length;
+            });
             
-            // Simulate conversion (replace with actual conversion logic)
-            setTimeout(function() {
-                document.getElementById('status').textContent = 'Conversion complete!';
-                document.getElementById('downloadLink').style.display = 'block';
-            }, 2000);
+            convertBtn.addEventListener('click', async function() {
+                const file = fileInput.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const pdf = await pdfjsLib.getDocument(e.target.result).promise;
+                    const doc = new docx.Document();
+                    
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const text = textContent.items.map(item => item.str).join(' ');
+                        doc.addSection({
+                            children: [new docx.Paragraph({
+                                children: [new docx.TextRun(text)]
+                            })]
+                        });
+                    }
+                    
+                    const blob = await docx.Packer.toBlob(doc);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name.replace('.pdf', '.docx');
+                    a.click();
+                };
+                reader.readAsArrayBuffer(file);
+            });
         });
     </script>
+</head>
+<body>
+    <input type="file" id="pdfFile" accept=".pdf">
+    <button id="convertBtn" disabled>Convert to Word</button>
 </body>
 </html>
