@@ -5,50 +5,36 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDF to Word Converter | PDFToolsLover</title>
     <link rel="stylesheet" href="assets/style.css">
-    <meta name="description" content="Convert PDF files to editable Word documents in your browser">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>PDFToolsLover</h1>
             <h2>PDF to Word Converter</h2>
-            <p class="subtitle">Convert your PDFs to editable Word documents instantly</p>
         </header>
         
         <main>
             <div class="upload-box">
-                <label for="pdfFile" class="file-label">
-                    <span id="fileName">Choose PDF file (max 5MB)</span>
-                    <input type="file" id="pdfFile" accept=".pdf">
-                </label>
-                <button id="convertBtn" disabled>Convert to Word</button>
+                <input type="file" id="pdfFile" accept=".pdf">
+                <button id="convertBtn">Convert to Word</button>
             </div>
             
-            <div id="status" aria-live="polite"></div>
+            <div id="status"></div>
             
             <div id="downloadLink" style="display:none;">
-                <a id="docxDownload" class="download-btn" download>
-                    <span class="download-icon">↓</span>
-                    <span id="downloadText">Download Word File</span>
-                </a>
+                <a id="docxDownload" download>Download Word File</a>
             </div>
         </main>
-        
-        <footer>
-            <p>All conversions happen in your browser - your files never leave your device</p>
-        </footer>
     </div>
 
-    <script>
-        // File input handler to show selected file name
-        document.getElementById('pdfFile').addEventListener('change', function(e) {
-            const fileName = e.target.files[0] ? e.target.files[0].name : 'Choose PDF file (max 5MB)';
-            document.getElementById('fileName').textContent = fileName;
-            document.getElementById('convertBtn').disabled = !e.target.files[0];
-        });
-    </script>
+    <!-- Load PDF.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js"></script>
     
-    <!-- Main conversion script -->
+    <!-- Load docx.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    
+    <!-- Main script must come after libraries -->
     <script src="assets/script.js"></script>
 </body>
 </html>
