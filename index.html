@@ -2,7 +2,49 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Word Converter | PDFToolsLover</title>
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>PDFToolsLover</h1>
+            <h2>PDF to Word Converter</h2>
+        </header>
+        
+        <main>
+            <div class="upload-box">
+                <input type="file" id="pdfFile" accept=".pdf">
+                <button id="convertBtn" disabled>Convert to Word</button>
+            </div>
+            
+            <div id="status"></div>
+            
+            <div id="downloadLink" style="display:none;">
+                <a id="docxDownload" download>Download Word File</a>
+            </div>
+        </main>
+    </div>
+
+    <!-- Load libraries first -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script>
+        // Set PDF.js worker path before any operations
+        pdfjsLib = window['pdfjs-dist/build/pdf'];
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/docx/7.8.2/docx.min.js"></script>
+    
+    <!-- Then load our script -->
+    <script src="assets/script.js"></script>
+</body>
+</html>
     <title>PDF to Word Converter | PDFToolsLover</title>
     <link rel="stylesheet" href="assets/style.css">
 </head>
