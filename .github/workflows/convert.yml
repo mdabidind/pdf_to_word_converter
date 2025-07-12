@@ -1,1 +1,36 @@
+name: PDF to Word Converter
 
+on:
+  workflow_dispatch:
+    inputs:
+      pdf_url:
+        description: 'URL of PDF to convert'
+        required: true
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
+        pip install -r requirements.txt
+    
+    - name: Download PDF
+      run: wget ${{ github.event.inputs.pdf_url }} -O input.pdf
+    
+    - name: Convert PDF to Word
+      run: python scripts/convert.py
+    
+    - name: Upload Word document
+      uses: actions/upload-artifact@v3
+      with:
+        name: converted-document
+        path: output.docx
