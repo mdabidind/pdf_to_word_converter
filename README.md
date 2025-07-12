@@ -1,30 +1,21 @@
-# pdf_to_word_converter
-# PDF to Word Converter (GitHub Version)
+# PDF to Word Converter
 
-Converts PDFs to Word documents using GitHub Actions.
+Convert PDF files to editable Word documents directly in your browser.
 
 ## How to Use
 
-1. Upload your PDF to any public URL
-2. Go to Actions tab in this repository
-3. Run the "PDF to Word Converter" workflow
-4. Enter the PDF URL when prompted
-5. Download the converted file from artifacts
+1. Visit the [GitHub Pages site](https://yourusername.github.io/repo-name)
+2. Upload your PDF file
+3. Click "Convert to Word"
+4. Download your converted file
 
-## Limitations
+## For Developers
 
-- GitHub Actions has a 6-hour maximum runtime
-- Free accounts have 2000 minutes/month
-- PDF must be publicly accessible
-- Max 10MB file size (GitHub artifact limit)
+To run locally:
+1. Clone this repository
+2. Open `index.html` in your browser
 
-## Advanced Setup
-
-For automatic browser uploads:
-
-1. Create a GitHub Personal Access Token
-2. Set up a serverless function to:
-   - Accept file uploads
-   - Push to GitHub repo
-   - Trigger workflow
-   - Return download link
+To trigger manual conversion via GitHub Actions:
+1. Go to Actions tab
+2. Select "PDF to Word Converter"
+3. Run workflow with PDF URL
