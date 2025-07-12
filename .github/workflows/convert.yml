@@ -1,31 +1,41 @@
-name: PDF to Word Converter
+name: PDF to Word Conversion
 
 on:
   workflow_dispatch:
     inputs:
       pdf_url:
-        description: 'URL of PDF to convert'
+        description: 'URL of the PDF file to convert'
         required: true
+      output_name:
+        description: 'Name for the output Word file (without extension)'
+        required: false
 
 jobs:
   convert:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
-    
-    - name: Install dependencies
+        
+    - name: Install system dependencies
       run: |
+        sudo apt-get update
         sudo apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
-        pip install pytesseract pdf2image python-docx
+        
+    - name: Install Python packages
+      run: |
+        pip install PyPDF2 pytesseract pdf2image python-docx
         
     - name: Download PDF
-      run: wget ${{ github.event.inputs.pdf_url }} -O input.pdf
-    
+      run: |
+        wget "${{ github.event.inputs.pdf_url }}" -O input.pdf
+        echo "PDF downloaded successfully"
+        
     - name: Convert PDF to Word
       run: |
         python -c "
@@ -34,7 +44,7 @@ jobs:
         import pytesseract
         from PIL import Image
         import os
-        
+
         doc = Document()
         images = convert_from_path('input.pdf')
         
@@ -45,11 +55,12 @@ jobs:
             doc.add_paragraph(text)
             os.remove(temp_img)
         
-        doc.save('output.docx')
+        output_name = '${{ github.event.inputs.output_name || 'output' }}'
+        doc.save(f'{output_name}.docx')
         "
-    
+        
     - name: Upload Word document
       uses: actions/upload-artifact@v3
       with:
         name: converted-document
-        path: output.docx
+        path: ${{ github.event.inputs.output_name || 'output' }}.docx
