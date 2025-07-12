@@ -4,55 +4,80 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDFToolsLover - PDF to Word Converter</title>
-    <link rel="stylesheet" href="assets/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .file-input {
+            margin: 20px 0;
+            padding: 20px;
+            border: 2px dashed #3498db;
+            text-align: center;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            width: 100%;
+            cursor: pointer;
+        }
+        button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 10px 0;
+            min-height: 20px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>PDFToolsLover</h1>
-            <h2>PDF to Word Converter</h2>
-        </div>
-
-        <div class="converter-box">
-            <div class="file-input-container">
-                <label class="file-input-label">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3498db" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    <div>Click to choose PDF or drag & drop</div>
-                    <div class="file-size">Max 10MB</div>
-                </label>
-                <input type="file" id="pdfFile" accept=".pdf">
-                <div id="fileNameDisplay"></div>
-            </div>
-
-            <button id="convertBtn" disabled>Convert to Word</button>
-            <div id="status"></div>
-            <div id="downloadLink" style="display:none;">
-                <a id="docxDownload" download>Download Word File</a>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>All conversions happen in your browser - your files never leave your device</p>
-        </div>
+    <h1>PDFToolsLover</h1>
+    <h2>PDF to Word Converter</h2>
+    
+    <div class="file-input">
+        <input type="file" id="pdfFile" accept=".pdf">
+        <p>Max file size: 10MB</p>
+    </div>
+    
+    <button id="convertBtn" disabled>Convert to Word</button>
+    <div id="status"></div>
+    <div id="downloadLink" style="display:none;">
+        <a id="docxDownload" download>Download Word File</a>
     </div>
 
-    <!-- Load libraries -->
-    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script>
-        // Initialize PDF.js
-        pdfjsLib = window['pdfjs-dist/build/pdf'];
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 
-            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
-        
-        // Load main script after libraries are ready
-        const script = document.createElement('script');
-        script.src = 'assets/script.js';
-        document.head.appendChild(script);
+        // Simple file input handler
+        document.getElementById('pdfFile').addEventListener('change', function(e) {
+            const convertBtn = document.getElementById('convertBtn');
+            if (e.target.files.length > 0) {
+                convertBtn.disabled = false;
+                document.getElementById('status').textContent = 'File selected: ' + e.target.files[0].name;
+            } else {
+                convertBtn.disabled = true;
+            }
+        });
+
+        // Simple conversion handler
+        document.getElementById('convertBtn').addEventListener('click', function() {
+            const fileInput = document.getElementById('pdfFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                document.getElementById('status').textContent = 'Please select a file first';
+                return;
+            }
+            
+            document.getElementById('status').textContent = 'Conversion started...';
+            
+            // Simulate conversion (replace with actual conversion logic)
+            setTimeout(function() {
+                document.getElementById('status').textContent = 'Conversion complete!';
+                document.getElementById('downloadLink').style.display = 'block';
+            }, 2000);
+        });
     </script>
 </body>
 </html>
