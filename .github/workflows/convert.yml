@@ -21,13 +21,32 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install -y tesseract-ocr libtesseract-dev poppler-utils
-        pip install -r requirements.txt
-    
+        pip install pytesseract pdf2image python-docx
+        
     - name: Download PDF
       run: wget ${{ github.event.inputs.pdf_url }} -O input.pdf
     
     - name: Convert PDF to Word
-      run: python scripts/convert.py
+      run: |
+        python -c "
+        from docx import Document
+        from pdf2image import convert_from_path
+        import pytesseract
+        from PIL import Image
+        import os
+        
+        doc = Document()
+        images = convert_from_path('input.pdf')
+        
+        for i, image in enumerate(images):
+            temp_img = f'temp_{i}.png'
+            image.save(temp_img, 'PNG')
+            text = pytesseract.image_to_string(Image.open(temp_img))
+            doc.add_paragraph(text)
+            os.remove(temp_img)
+        
+        doc.save('output.docx')
+        "
     
     - name: Upload Word document
       uses: actions/upload-artifact@v3
