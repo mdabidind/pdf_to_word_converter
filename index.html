@@ -1,33 +1,160 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>PDF to Word Converter</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFToolsLover - PDF to Word Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+        }
+        .file-container {
+            border: 2px dashed #3498db;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            width: 100%;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+        #status {
+            margin: 15px 0;
+            min-height: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .processing {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        #downloadLink {
+            display: none;
+            margin-top: 20px;
+        }
+        #downloadLink a {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        #downloadLink a:hover {
+            background: #218838;
+        }
+        #fileName {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>PDFToolsLover</h1>
+    <h2>PDF to Word Converter</h2>
+    
+    <div class="file-container">
+        <input type="file" id="pdfFile" accept=".pdf" style="display: none;">
+        <label for="pdfFile" style="cursor: pointer;">
+            <div>Click to choose PDF or drag & drop</div>
+            <div style="font-size: 12px; color: #7f8c8d; margin-top: 5px;">Max 10MB</div>
+        </label>
+        <div id="fileName"></div>
+    </div>
+    
+    <button id="convertBtn" disabled>Convert to Word</button>
+    <div id="status"></div>
+    <div id="downloadLink">
+        <a id="docxDownload" download>Download Word File</a>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
     <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
     <script>
+        // Initialize PDF.js
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
         
         document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('pdfFile');
+            const pdfFile = document.getElementById('pdfFile');
             const convertBtn = document.getElementById('convertBtn');
+            const statusDiv = document.getElementById('status');
+            const fileNameDiv = document.getElementById('fileName');
+            const downloadLink = document.getElementById('downloadLink');
+            const docxDownload = document.getElementById('docxDownload');
             
-            fileInput.addEventListener('change', function() {
-                convertBtn.disabled = !this.files.length;
+            // File selection handler
+            pdfFile.addEventListener('change', function() {
+                if (this.files && this.files.length > 0) {
+                    fileNameDiv.textContent = this.files[0].name;
+                    convertBtn.disabled = false;
+                    statusDiv.textContent = '';
+                    statusDiv.className = '';
+                    downloadLink.style.display = 'none';
+                }
             });
             
+            // Conversion handler
             convertBtn.addEventListener('click', async function() {
-                const file = fileInput.files[0];
-                if (!file) return;
+                if (!pdfFile.files || pdfFile.files.length === 0) {
+                    statusDiv.textContent = 'Please select a PDF file first';
+                    statusDiv.className = 'error';
+                    return;
+                }
                 
-                const reader = new FileReader();
-                reader.onload = async function(e) {
-                    const pdf = await pdfjsLib.getDocument(e.target.result).promise;
+                const file = pdfFile.files[0];
+                
+                try {
+                    // Start conversion
+                    statusDiv.textContent = 'Processing PDF...';
+                    statusDiv.className = 'processing';
+                    convertBtn.disabled = true;
+                    
+                    // Read PDF
+                    const arrayBuffer = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = () => reject(new Error('Failed to read file'));
+                        reader.readAsArrayBuffer(file);
+                    });
+                    
+                    // Convert to Word
+                    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
                     const doc = new docx.Document();
                     
                     for (let i = 1; i <= pdf.numPages; i++) {
+                        statusDiv.textContent = `Processing page ${i} of ${pdf.numPages}...`;
                         const page = await pdf.getPage(i);
                         const textContent = await page.getTextContent();
-                        const text = textContent.items.map(item => item.str).join(' ');
+                        const text = textContent.items.map(item => item.str).join('\n');
+                        
                         doc.addSection({
                             children: [new docx.Paragraph({
                                 children: [new docx.TextRun(text)]
@@ -35,20 +162,33 @@
                         });
                     }
                     
+                    // Generate download
                     const blob = await docx.Packer.toBlob(doc);
                     const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name.replace('.pdf', '.docx');
-                    a.click();
-                };
-                reader.readAsArrayBuffer(file);
+                    const outputName = file.name.replace(/\.pdf$/i, '.docx');
+                    
+                    docxDownload.href = url;
+                    docxDownload.download = outputName;
+                    docxDownload.textContent = `Download ${outputName}`;
+                    downloadLink.style.display = 'block';
+                    
+                    statusDiv.textContent = 'Conversion complete! Ready to download.';
+                    statusDiv.className = 'success';
+                    
+                    // Clean up
+                    docxDownload.addEventListener('click', function() {
+                        setTimeout(() => URL.revokeObjectURL(url), 100);
+                    });
+                    
+                } catch (error) {
+                    statusDiv.textContent = `Error: ${error.message}`;
+                    statusDiv.className = 'error';
+                    console.error('Conversion error:', error);
+                } finally {
+                    convertBtn.disabled = false;
+                }
             });
         });
     </script>
-</head>
-<body>
-    <input type="file" id="pdfFile" accept=".pdf">
-    <button id="convertBtn" disabled>Convert to Word</button>
 </body>
 </html>
