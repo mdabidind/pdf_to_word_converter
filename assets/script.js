@@ -1,40 +1,133 @@
+// Configuration
+const GITHUB_USER = 'your-username';
+const REPO_NAME = 'pdf-to-word-converter';
+const GH_TOKEN = 'ghp_your_token_here'; // Store in GitHub Secrets for production
+
 document.addEventListener('DOMContentLoaded', () => {
     const dropArea = document.getElementById('drop-area');
-    const fileElem = document.getElementById('fileElem');
+    const fileInput = document.getElementById('fileElem');
     const convertBtn = document.getElementById('convert-btn');
-    const progress = document.getElementById('progress');
-    const result = document.getElementById('result');
+    const progressBar = document.querySelector('.progress-bar');
+    const resultDiv = document.getElementById('result');
     const downloadLink = document.getElementById('download-link');
     
-    let file = null;
+    let currentFile = null;
     
-    // Drag and drop handlers
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, preventDefaults, false);
+    // Drag and drop setup
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        dropArea.addEventListener(event, preventDefaults, false);
     });
     
+    ['dragenter', 'dragover'].forEach(event => {
+        dropArea.addEventListener(event, highlightArea, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(event => {
+        dropArea.addEventListener(event, unhighlightArea, false);
+    });
+    
+    dropArea.addEventListener('drop', handleDrop, false);
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    convertBtn.addEventListener('click', startConversion);
+    
+    async function startConversion() {
+        if (!currentFile) return;
+        
+        showProgress();
+        
+        try {
+            // 1. Encode file for GitHub API
+            const fileContent = await toBase64(currentFile);
+            const format = document.getElementById('format').value;
+            
+            // 2. Trigger GitHub Action
+            const response = await triggerConversion(
+                currentFile.name,
+                fileContent,
+                format
+            );
+            
+            // 3. Poll for artifact
+            const downloadUrl = await waitForArtifact();
+            showResult(downloadUrl);
+            
+        } catch (error) {
+            console.error("Conversion failed:", error);
+            alert("Conversion failed. Please try again.");
+            hideProgress();
+        }
+    }
+    
+    async function triggerConversion(filename, content, format) {
+        const response = await fetch(
+            `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/actions/workflows/convert.yml/dispatches`,
+            {
+                method: 'POST',
+                headers: {
+                    'Authorization': `token ${GH_TOKEN}`,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    ref: 'main',
+                    inputs: {
+                        filename: filename,
+                        file_content: content,
+                        format: format
+                    }
+                })
+            }
+        );
+        
+        if (!response.ok) {
+            throw new Error(`GitHub API error: ${response.status}`);
+        }
+        
+        return response;
+    }
+    
+    async function waitForArtifact() {
+        let attempts = 0;
+        
+        while (attempts < 30) { // Max 3 minutes
+            attempts++;
+            updateProgress(attempts * 3.33);
+            
+            const response = await fetch(
+                `https://api.github.com/repos/${GITHUB_USER}/${REPO_NAME}/actions/artifacts`,
+                {
+                    headers: {
+                        'Authorization': `token ${GH_TOKEN}`,
+                        'Accept': 'application/vnd.github.v3+json'
+                    }
+                }
+            );
+            
+            const data = await response.json();
+            if (data.artifacts && data.artifacts.length > 0) {
+                return `https://github.com/${GITHUB_USER}/${REPO_NAME}/suites/${data.artifacts[0].workflow_run.id}/artifacts/${data.artifacts[0].id}`;
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 6000)); // Check every 6 seconds
+        }
+        
+        throw new Error("Timeout waiting for artifact");
+    }
+    
+    // Helper functions
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
     }
     
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropArea.addEventListener(eventName, highlight, false);
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropArea.addEventListener(eventName, unhighlight, false);
-    });
-    
-    function highlight() {
+    function highlightArea() {
         dropArea.classList.add('highlight');
     }
     
-    function unhighlight() {
+    function unhighlightArea() {
         dropArea.classList.remove('highlight');
     }
-    
-    dropArea.addEventListener('drop', handleDrop, false);
     
     function handleDrop(e) {
         const dt = e.dataTransfer;
@@ -44,73 +137,36 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    fileElem.addEventListener('change', function() {
-        handleFiles(this.files);
-    });
-    
-    function handleFiles(files) {
-        file = files[0];
-        if (file.type !== 'application/pdf') {
-            alert('Please upload a PDF file');
-            return;
-        }
-        dropArea.innerHTML = `<p>${file.name} (${formatFileSize(file.size)})</p>`;
+    function handleFileSelect(e) {
+        handleFiles(e.target.files);
     }
     
-    convertBtn.addEventListener('click', async () => {
-        if (!file) {
-            alert('Please select a PDF file first');
-            return;
-        }
-        
-        progress.classList.remove('hidden');
-        result.classList.add('hidden');
-        
-        const formData = new FormData();
-        formData.append('pdf', file);
-        formData.append('format', document.getElementById('format').value);
-        
-        try {
-            // Create a GitHub Actions workflow dispatch
-            const response = await fetch(`https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/actions/workflows/convert.yml/dispatches`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'token YOUR_GITHUB_TOKEN',
-                    'Accept': 'application/vnd.github.v3+json',
-                },
-                body: JSON.stringify({
-                    ref: 'main',
-                    inputs: {
-                        filename: file.name,
-                        format: document.getElementById('format').value
-                    }
-                })
-            });
-            
-            if (!response.ok) throw new Error('Conversion failed');
-            
-            // Poll for result (simplified - in production use GitHub API to check artifacts)
-            let attempts = 0;
-            const poll = setInterval(async () => {
-                attempts++;
-                const progressValue = Math.min(100, attempts * 10);
-                document.querySelector('progress').value = progressValue;
-                
-                if (attempts >= 10) {
-                    clearInterval(poll);
-                    progress.classList.add('hidden');
-                    downloadLink.href = `https://github.com/YOUR_USERNAME/YOUR_REPO/raw/main/converted/${file.name.replace('.pdf', '')}.${document.getElementById('format').value}`;
-                    downloadLink.download = file.name.replace('.pdf', '') + '.' + document.getElementById('format').value;
-                    result.classList.remove('hidden');
-                }
-            }, 2000);
-            
-        } catch (error) {
-            console.error(error);
-            alert('Conversion failed: ' + error.message);
-            progress.classList.add('hidden');
-        }
-    });
+    function handleFiles(files) {
+        currentFile = files[0];
+        dropArea.innerHTML = `
+            <p>${currentFile.name}</p>
+            <small>${formatFileSize(currentFile.size)}</small>
+        `;
+    }
+    
+    function showProgress() {
+        document.getElementById('progress').classList.remove('hidden');
+        resultDiv.classList.add('hidden');
+    }
+    
+    function hideProgress() {
+        document.getElementById('progress').classList.add('hidden');
+    }
+    
+    function updateProgress(percent) {
+        progressBar.style.width = `${percent}%`;
+    }
+    
+    function showResult(url) {
+        downloadLink.href = url;
+        resultDiv.classList.remove('hidden');
+        hideProgress();
+    }
     
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
@@ -118,5 +174,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const sizes = ['Bytes', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    function toBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = error => reject(error);
+        });
     }
 });
