@@ -3,11 +3,8 @@ name: PDF to Word Conversion
 on:
   workflow_dispatch:
     inputs:
-      filename:
-        description: 'PDF filename'
-        required: true
-      file_content:
-        description: 'Base64 encoded file content'
+      file_id:
+        description: 'Unique file ID'
         required: true
       format:
         description: 'Output format'
@@ -20,29 +17,37 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       
-      - name: Set up environment
+      - name: Download uploaded file
         run: |
           mkdir -p uploads
-          mkdir -p converted
-          echo "${{ inputs.file_content }}" | base64 --decode > uploads/${{ inputs.filename }}
-          
+          curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3.raw" \
+            -o "uploads/${{ inputs.file_id }}.pdf" \
+            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf"
+            
       - name: Install LibreOffice
         run: sudo apt-get update && sudo apt-get install -y libreoffice
       
       - name: Convert file
         run: |
+          mkdir -p converted
           libreoffice --headless --convert-to ${{ inputs.format }} \
             --outdir converted/ \
-            uploads/${{ inputs.filename }}
+            uploads/${{ inputs.file_id }}.pdf
           
-      - name: Prepare output
-        run: |
-          OUTPUT_FILE=$(ls converted/)
-          mv "converted/$OUTPUT_FILE" "converted/output.${{ inputs.format }}"
+          # Rename output to known filename
+          mv converted/*.${{ inputs.format }} converted/output.${{ inputs.format }}
           
-      - name: Upload artifact
+      - name: Upload result
         uses: actions/upload-artifact@v3
         with:
-          name: converted-file
+          name: converted-${{ inputs.file_id }}
           path: converted/output.${{ inputs.format }}
           retention-days: 1
+      
+      - name: Cleanup
+        run: |
+          curl -X DELETE -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf" \
+            -d '{"message":"Cleanup after conversion", "sha":"$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf" | jq -r .sha)"}'
