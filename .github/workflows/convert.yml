@@ -1,1 +1,50 @@
+name: PDF to Word Conversion
 
+on:
+  workflow_dispatch:
+    inputs:
+      filename:
+        description: 'PDF filename'
+        required: true
+      format:
+        description: 'Output format (docx/doc)'
+        required: true
+        default: 'docx'
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install LibreOffice
+        run: sudo apt-get update && sudo apt-get install -y libreoffice
+      
+      - name: Create directories
+        run: |
+          mkdir -p uploads
+          mkdir -p converted
+      
+      - name: Download PDF (simulated - in production use your storage)
+        run: |
+          echo "This would download the user's PDF file in a real implementation"
+          # Example: curl -o uploads/${{ inputs.filename }} [URL_TO_USER_FILE]
+          touch uploads/${{ inputs.filename }}
+      
+      - name: Convert PDF to Word
+        run: |
+          libreoffice --headless --convert-to ${{ inputs.format }} --outdir converted/ uploads/${{ inputs.filename }}
+      
+      - name: Upload result
+        uses: actions/upload-artifact@v2
+        with:
+          name: converted-file
+          path: converted/
+      
+      - name: Commit and push result
+        run: |
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+          git add converted/
+          git commit -m "Add converted file for ${{ inputs.filename }}"
+          git push
