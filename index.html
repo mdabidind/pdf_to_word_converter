@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to Word Converter | GitHub Hosted</title>
-    <meta name="description" content="Free online PDF to Word converter hosted on GitHub">
+    <title>GitHub-Powered PDF to Word Converter</title>
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -18,17 +17,18 @@
             </div>
             <div class="options">
                 <select id="format">
-                    <option value="docx">DOCX (Word 2007+)</option>
-                    <option value="doc">DOC (Word 97-2003)</option>
+                    <option value="docx">DOCX</option>
+                    <option value="doc">DOC</option>
                 </select>
-                <button id="convert-btn">Convert to Word</button>
+                <button id="convert-btn">Convert</button>
             </div>
             <div id="progress" class="hidden">
-                <progress value="0" max="100"></progress>
-                <p>Processing on GitHub...</p>
+                <div class="progress-bar"></div>
+                <p>Processing via GitHub...</p>
             </div>
             <div id="result" class="hidden">
                 <a id="download-link" class="button">Download Word File</a>
+                <div id="qr-code"></div>
             </div>
         </div>
     </div>
