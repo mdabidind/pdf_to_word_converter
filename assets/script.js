@@ -1,111 +1,182 @@
-async function startConversion() {
-    if (!currentFile) {
-        showError("Please select a PDF file first");
-        return;
+document.addEventListener('DOMContentLoaded', () => {
+    // DOM Elements
+    const fileInput = document.getElementById('file-input');
+    const dropZone = document.getElementById('drop-zone');
+    const fileInfo = document.getElementById('file-info');
+    const convertBtn = document.getElementById('convert-btn');
+    const progressSection = document.getElementById('progress-section');
+    const resultSection = document.getElementById('result-section');
+    const errorSection = document.getElementById('error-section');
+    const downloadBtn = document.getElementById('download-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const progressFill = document.getElementById('progress-fill');
+    const progressText = document.getElementById('progress-text');
+    const errorMessage = document.getElementById('error-message');
+
+    // State
+    let currentFile = null;
+    let conversionInProgress = false;
+
+    // Event Listeners
+    dropZone.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', handleFileSelect);
+    convertBtn.addEventListener('click', startConversion);
+    retryBtn.addEventListener('click', resetConverter);
+
+    // Drag and Drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        dropZone.addEventListener(event, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(event => {
+        dropZone.addEventListener(event, highlightDropZone, false);
+    });
+
+    ['dragleave', 'drop'].forEach(event => {
+        dropZone.addEventListener(event, unhighlightDropZone, false);
+    });
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    // Functions
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
     }
 
-    showProgress();
-    hideError();
-    
-    try {
-        // 1. Validate file
-        if (currentFile.size > 10 * 1024 * 1024) { // 10MB limit
-            throw new Error("File too large (max 10MB)");
-        }
-
-        // 2. Prepare for upload
-        const fileContent = await toBase64(currentFile);
-        const format = document.getElementById('format').value;
-        const uniqueId = Date.now();
-
-        // 3. Store file temporarily (simulated)
-        const storeResponse = await fetch('https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/contents/temp_uploads/' + uniqueId + '.pdf', {
-            method: 'PUT',
-            headers: {
-                'Authorization': 'token ' + GH_TOKEN,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                message: 'Temporary upload for conversion',
-                content: fileContent
-            })
-        });
-
-        if (!storeResponse.ok) {
-            throw new Error("Failed to upload file");
-        }
-
-        // 4. Trigger conversion
-        const convertResponse = await fetch(`https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/actions/workflows/convert.yml/dispatches`, {
-            method: 'POST',
-            headers: {
-                'Authorization': 'token ' + GH_TOKEN,
-                'Accept': 'application/vnd.github.v3+json'
-            },
-            body: JSON.stringify({
-                ref: 'main',
-                inputs: {
-                    file_id: uniqueId.toString(),
-                    format: format
-                }
-            })
-        });
-
-        if (!convertResponse.ok) {
-            throw new Error("Conversion trigger failed");
-        }
-
-        // 5. Poll for completion
-        await waitForCompletion(uniqueId, format);
-
-    } catch (error) {
-        console.error("Conversion error:", error);
-        showError(error.message || "Conversion failed. Please try again.");
-        hideProgress();
+    function highlightDropZone() {
+        dropZone.classList.add('highlight');
     }
-}
 
-async function waitForCompletion(fileId, format) {
-    let attempts = 0;
-    const maxAttempts = 30; // ~3 minutes timeout
-    
-    while (attempts < maxAttempts) {
-        attempts++;
-        updateProgress((attempts/maxAttempts) * 100);
-        
-        // Check for artifact
-        const artifactResponse = await fetch(`https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/actions/artifacts`, {
-            headers: {
-                'Authorization': 'token ' + GH_TOKEN,
-                'Accept': 'application/vnd.github.v3+json'
+    function unhighlightDropZone() {
+        dropZone.classList.remove('highlight');
+    }
+
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files.length) {
+            handleFileSelect({ target: { files } });
+        }
+    }
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length) {
+            currentFile = files[0];
+            
+            // Validate file
+            if (!currentFile.name.toLowerCase().endsWith('.pdf')) {
+                showError('Please select a PDF file');
+                convertBtn.disabled = true;
+                return;
             }
-        });
-        
-        const artifacts = await artifactResponse.json();
-        const ourArtifact = artifacts.artifacts.find(a => a.name === `converted-${fileId}`);
-        
-        if (ourArtifact) {
-            // Get download URL
-            const downloadUrl = `https://github.com/YOUR_USERNAME/YOUR_REPO/suites/${ourArtifact.workflow_run.id}/artifacts/${ourArtifact.id}`;
-            showResult(downloadUrl);
-            return;
+            
+            // Validate file size (10MB max)
+            if (currentFile.size > 10 * 1024 * 1024) {
+                showError('File too large (max 10MB)');
+                convertBtn.disabled = true;
+                return;
+            }
+            
+            fileInfo.innerHTML = `
+                <strong>${currentFile.name}</strong><br>
+                <small>${formatFileSize(currentFile.size)}</small>
+            `;
+            
+            convertBtn.disabled = false;
+            hideError();
         }
-        
-        await new Promise(r => setTimeout(r, 6000)); // Wait 6 seconds
     }
-    
-    throw new Error("Conversion timed out");
-}
 
-function showError(message) {
-    const errorDiv = document.getElementById('error-message') || document.createElement('div');
-    errorDiv.id = 'error-message';
-    errorDiv.className = 'error-message';
-    errorDiv.textContent = message;
-    document.querySelector('.container').appendChild(errorDiv);
-}
+    async function startConversion() {
+        if (!currentFile || conversionInProgress) return;
+        
+        conversionInProgress = true;
+        convertBtn.disabled = true;
+        showProgress();
+        hideError();
+        hideResult();
+        
+        try {
+            // Simulate conversion process (replace with actual API call)
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                updateProgress(progress);
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    conversionInProgress = false;
+                    showResult();
+                    
+                    // Set download link (in real implementation, this would be the actual file URL)
+                    const format = document.getElementById('format').value;
+                    const fileName = currentFile.name.replace('.pdf', '') + '.' + format;
+                    downloadBtn.setAttribute('download', fileName);
+                }
+            }, 300);
+            
+        } catch (error) {
+            console.error("Conversion error:", error);
+            showError(error.message || "Conversion failed. Please try again.");
+            conversionInProgress = false;
+        }
+    }
 
-function hideError() {
-    const errorDiv = document.getElementById('error-message');
-    if (errorDiv) errorDiv.remove();
-}
+    function updateProgress(value) {
+        const percent = Math.min(100, Math.max(0, Math.round(value)));
+        progressFill.style.width = percent + '%';
+        progressText.textContent = getProgressMessage(percent);
+    }
+
+    function getProgressMessage(percent) {
+        if (percent < 30) return "Uploading your file...";
+        if (percent < 70) return "Converting to Word format...";
+        if (percent < 100) return "Finalizing document...";
+        return "Conversion complete!";
+    }
+
+    function showProgress() {
+        progressSection.classList.remove('hidden');
+    }
+
+    function hideProgress() {
+        progressSection.classList.add('hidden');
+    }
+
+    function showResult() {
+        resultSection.classList.remove('hidden');
+    }
+
+    function hideResult() {
+        resultSection.classList.add('hidden');
+    }
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorSection.classList.remove('hidden');
+    }
+
+    function hideError() {
+        errorSection.classList.add('hidden');
+    }
+
+    function resetConverter() {
+        currentFile = null;
+        fileInput.value = '';
+        fileInfo.innerHTML = '';
+        convertBtn.disabled = true;
+        hideProgress();
+        hideResult();
+        hideError();
+    }
+
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+});
