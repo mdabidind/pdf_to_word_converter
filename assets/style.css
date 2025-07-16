@@ -1,123 +1,14 @@
-:root {
-    --primary: #2b6cb0;
-    --secondary: #4299e1;
-    --light: #ebf8ff;
-    --dark: #2d3748;
-}
-
-body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    line-height: 1.6;
-    background: #f7fafc;
-    color: var(--dark);
-    margin: 0;
-    padding: 2rem;
-}
-
-.container {
-    max-width: 800px;
-    margin: 0 auto;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    padding: 2.5rem;
-}
-
-h1 {
-    color: var(--primary);
-    text-align: center;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-}
-
-#drop-area {
-    border: 2px dashed #cbd5e0;
-    border-radius: 8px;
-    padding: 3rem 2rem;
-    text-align: center;
-    margin: 1.5rem 0;
-    transition: all 0.2s ease;
-}
-
-#drop-area.highlight {
-    border-color: var(--secondary);
-    background: var(--light);
-}
-
-.button {
-    display: inline-block;
-    padding: 0.75rem 1.5rem;
-    background: var(--primary);
-    color: white;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    text-decoration: none;
-}
-
-.button:hover {
-    background: var(--secondary);
-    transform: translateY(-1px);
-}
-
-.options {
-    display: flex;
-    gap: 1rem;
-    margin: 1.5rem 0;
-}
-
-select {
-    flex: 1;
-    padding: 0.75rem;
-    border: 1px solid #e2e8f0;
-    border-radius: 6px;
-    background: white;
-}
-
-#progress {
-    margin: 2rem 0;
-}
-
-.progress-bar {
-    height: 8px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    overflow: hidden;
-    margin-bottom: 1rem;
-}
-
-.progress-bar::after {
-    content: '';
-    display: block;
-    height: 100%;
-    width: 0;
-    background: var(--primary);
-    transition: width 0.3s ease;
-}
-
-.hidden {
-    display: none;
-}
-
-#result {
-    text-align: center;
-    margin-top: 2rem;
+.error-message {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 1rem;
+    border-radius: 0.5rem;
+    margin: 1rem 0;
+    border: 1px solid #fca5a5;
     animation: fadeIn 0.3s ease;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
-}
-
-@media (max-width: 640px) {
-    .container {
-        padding: 1.5rem;
-    }
-    
-    .options {
-        flex-direction: column;
-    }
 }
