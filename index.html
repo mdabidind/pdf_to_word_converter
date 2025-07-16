@@ -1,1 +1,37 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF to Word Converter | GitHub Hosted</title>
+    <meta name="description" content="Free online PDF to Word converter hosted on GitHub">
+    <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>PDF to Word Converter</h1>
+        <div class="converter">
+            <div id="drop-area">
+                <p>Drag & drop PDF file here</p>
+                <input type="file" id="fileElem" accept=".pdf">
+                <label class="button" for="fileElem">Select PDF</label>
+            </div>
+            <div class="options">
+                <select id="format">
+                    <option value="docx">DOCX (Word 2007+)</option>
+                    <option value="doc">DOC (Word 97-2003)</option>
+                </select>
+                <button id="convert-btn">Convert to Word</button>
+            </div>
+            <div id="progress" class="hidden">
+                <progress value="0" max="100"></progress>
+                <p>Processing on GitHub...</p>
+            </div>
+            <div id="result" class="hidden">
+                <a id="download-link" class="button">Download Word File</a>
+            </div>
+        </div>
+    </div>
+    <script src="assets/script.js"></script>
+</body>
+</html>
