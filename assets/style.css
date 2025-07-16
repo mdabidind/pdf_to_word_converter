@@ -1,271 +1,188 @@
 :root {
     --primary: #4a6bff;
     --primary-dark: #3a5bef;
-    --secondary: #f8f9fe;
     --text: #2d3748;
     --text-light: #718096;
     --border: #e2e8f0;
     --success: #4CAF50;
-    --error: #F44336;
-    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
 }
 
 body {
-    font-family: 'Poppins', sans-serif;
+    font-family: Arial, sans-serif;
     background-color: #f5f7ff;
-    color: var(--text);
-    line-height: 1.6;
-    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
-    padding: 20px;
+    min-height: 100vh;
 }
 
-.app-container {
+.container {
     width: 100%;
-    max-width: 600px;
+    max-width: 500px;
 }
 
 .converter-card {
     background: white;
-    border-radius: 16px;
-    box-shadow: var(--shadow);
-    overflow: hidden;
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 30px;
 }
 
-.card-header {
-    padding: 24px;
-    background: linear-gradient(135deg, var(--primary) 0%, #6a5acd 100%);
-    color: white;
+h1 {
+    color: var(--primary);
     text-align: center;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-
-.logo h1 {
-    font-size: 1.75rem;
-    font-weight: 600;
+    margin-bottom: 5px;
 }
 
 .subtitle {
-    font-size: 0.9rem;
-    opacity: 0.9;
-    font-weight: 300;
+    color: var(--text-light);
+    text-align: center;
+    margin-bottom: 25px;
 }
 
-.card-body {
-    padding: 24px;
-}
-
-.file-drop-area {
+#drop-zone {
     border: 2px dashed var(--border);
-    border-radius: 12px;
-    padding: 40px 20px;
+    border-radius: 8px;
+    padding: 30px;
     text-align: center;
     cursor: pointer;
     transition: all 0.3s;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
-.file-drop-area:hover {
+#drop-zone.highlight {
     border-color: var(--primary);
     background-color: rgba(74, 107, 255, 0.03);
 }
 
 .upload-icon {
-    margin-bottom: 16px;
-    opacity: 0.7;
-}
-
-.file-drop-area h3 {
-    font-size: 1.1rem;
-    margin-bottom: 4px;
-    color: var(--text);
+    width: 48px;
+    height: 48px;
+    margin-bottom: 10px;
+    fill: var(--primary);
 }
 
 .support-text {
-    font-size: 0.85rem;
     color: var(--text-light);
+    font-size: 0.9rem;
 }
 
 #file-input {
     display: none;
 }
 
-.file-info {
-    font-size: 0.9rem;
+.file-display {
+    background: #f8f9fe;
+    padding: 10px;
+    border-radius: 6px;
+    margin-top: 10px;
+}
+
+.file-display strong {
+    display: block;
+    margin-bottom: 3px;
+}
+
+.file-display span {
     color: var(--text-light);
-    text-align: center;
-    margin-top: 8px;
+    font-size: 0.85rem;
 }
 
-.conversion-options {
-    margin-top: 24px;
+.options {
+    margin-top: 20px;
 }
 
-.option-group {
-    margin-bottom: 20px;
-}
-
-.option-group label {
+.options label {
     display: block;
     margin-bottom: 8px;
     font-size: 0.9rem;
     color: var(--text-light);
 }
 
-.styled-select {
+.options select {
     width: 100%;
-    padding: 12px 16px;
+    padding: 10px;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    background-color: white;
-    font-family: inherit;
-    font-size: 0.95rem;
-    appearance: none;
-    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 16px;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    font-size: 1rem;
 }
 
-.primary-btn {
+#convert-btn {
     width: 100%;
-    padding: 14px;
-    background-color: var(--primary);
+    padding: 12px;
+    background: var(--primary);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     font-size: 1rem;
-    font-weight: 500;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
     transition: all 0.3s;
 }
 
-.primary-btn:hover {
-    background-color: var(--primary-dark);
-    transform: translateY(-2px);
+#convert-btn:hover {
+    background: var(--primary-dark);
 }
 
-.primary-btn:disabled {
-    background-color: #cbd5e0;
+#convert-btn:disabled {
+    background: #cbd5e0;
     cursor: not-allowed;
-    transform: none;
 }
 
-.btn-text {
-    flex: 1;
-}
-
-.progress-container {
-    margin: 24px 0;
+#progress-section {
+    margin: 20px 0;
 }
 
 .progress-bar {
-    height: 8px;
-    background-color: var(--border);
-    border-radius: 4px;
+    height: 6px;
+    background: #e2e8f0;
+    border-radius: 3px;
     overflow: hidden;
+    margin-bottom: 10px;
 }
 
 .progress-fill {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, var(--primary) 0%, #6a5acd 100%);
-    border-radius: 4px;
-    transition: width 0.3s ease;
+    background: var(--primary);
+    transition: width 0.3s;
 }
 
-.progress-text {
-    font-size: 0.9rem;
+#progress-text {
+    text-align: center;
     color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+#result-section {
     text-align: center;
-    margin-top: 8px;
+    margin-top: 20px;
 }
 
-.success-message, .error-message {
-    text-align: center;
-    padding: 20px 0;
-}
-
-.success-message h3 {
-    color: var(--success);
-    margin: 16px 0;
-}
-
-.error-message h3 {
-    color: var(--error);
-    margin: 16px 0;
+.success-icon {
+    width: 48px;
+    height: 48px;
+    fill: var(--success);
+    margin-bottom: 10px;
 }
 
 .download-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    display: inline-block;
     padding: 12px 24px;
-    background-color: var(--success);
+    background: var(--success);
     color: white;
-    border-radius: 8px;
+    border-radius: 6px;
     text-decoration: none;
-    font-weight: 500;
-    margin-top: 16px;
+    margin-top: 15px;
     transition: all 0.3s;
 }
 
 .download-btn:hover {
-    background-color: #3d8b40;
-    transform: translateY(-2px);
-}
-
-.secondary-btn {
-    padding: 12px 24px;
-    background-color: white;
-    color: var(--error);
-    border: 1px solid var(--error);
-    border-radius: 8px;
-    font-weight: 500;
-    margin-top: 16px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-
-.secondary-btn:hover {
-    background-color: rgba(244, 67, 54, 0.1);
+    background: #3d8b40;
 }
 
 .hidden {
     display: none;
-}
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-    .card-header {
-        padding: 20px;
-    }
-    
-    .card-body {
-        padding: 20px;
-    }
-    
-    .file-drop-area {
-        padding: 30px 15px;
-    }
 }
