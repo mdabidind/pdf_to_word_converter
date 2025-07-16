@@ -1,60 +1,54 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize all elements
+    // DOM elements
     const fileInput = document.getElementById('file-input');
     const dropZone = document.getElementById('drop-zone');
     const fileInfo = document.getElementById('file-info');
     const convertBtn = document.getElementById('convert-btn');
     const progressSection = document.getElementById('progress-section');
     const resultSection = document.getElementById('result-section');
-    const errorSection = document.getElementById('error-section');
+    const downloadBtn = document.getElementById('download-btn');
     const progressFill = document.querySelector('.progress-fill');
     const progressText = document.getElementById('progress-text');
-    const downloadBtn = document.getElementById('download-btn');
-    const retryBtn = document.getElementById('retry-btn');
     
-    // Ensure all status sections are hidden initially
-    progressSection.classList.add('hidden');
-    resultSection.classList.add('hidden');
-    errorSection.classList.add('hidden');
-    
-    // File selection handlers
+    // State
+    let currentFile = null;
+    let convertedFileUrl = null;
+
+    // Event listeners
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleFileSelect);
-    
-    // Drag and drop handlers
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, preventDefaults, false);
-    });
-    
-    ['dragenter', 'dragover'].forEach(eventName => {
-        dropZone.addEventListener(eventName, highlight, false);
-    });
-    
-    ['dragleave', 'drop'].forEach(eventName => {
-        dropZone.addEventListener(eventName, unhighlight, false);
-    });
-    
-    dropZone.addEventListener('drop', handleDrop, false);
-    
-    // Conversion button handler
     convertBtn.addEventListener('click', startConversion);
-    
-    // Retry button handler
-    retryBtn.addEventListener('click', resetConverter);
-    
+    downloadBtn.addEventListener('click', downloadFile);
+
+    // Drag and drop
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        dropZone.addEventListener(event, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(event => {
+        dropZone.addEventListener(event, highlightDropZone, false);
+    });
+
+    ['dragleave', 'drop'].forEach(event => {
+        dropZone.addEventListener(event, unhighlightDropZone, false);
+    });
+
+    dropZone.addEventListener('drop', handleDrop, false);
+
+    // Functions
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
     }
-    
-    function highlight() {
+
+    function highlightDropZone() {
         dropZone.classList.add('highlight');
     }
-    
-    function unhighlight() {
+
+    function unhighlightDropZone() {
         dropZone.classList.remove('highlight');
     }
-    
+
     function handleDrop(e) {
         const dt = e.dataTransfer;
         const files = dt.files;
@@ -62,104 +56,87 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFileSelect({ target: { files } });
         }
     }
-    
+
     function handleFileSelect(e) {
         const files = e.target.files;
         if (files.length) {
-            const file = files[0];
+            currentFile = files[0];
             
             // Validate file
-            if (!file.name.toLowerCase().endsWith('.pdf')) {
-                showError('Please select a PDF file');
+            if (!currentFile.name.toLowerCase().endsWith('.pdf')) {
+                alert('Please select a PDF file');
                 return;
             }
             
-            // Validate file size (10MB max)
-            if (file.size > 10 * 1024 * 1024) {
-                showError('File too large (max 10MB)');
-                return;
-            }
-            
-            // Display file info
+            // Update UI
             fileInfo.innerHTML = `
-                <strong>${file.name}</strong><br>
-                <small>${formatFileSize(file.size)}</small>
+                <div class="file-display">
+                    <strong>${currentFile.name}</strong>
+                    <span>${formatFileSize(currentFile.size)}</span>
+                </div>
             `;
             
-            // Enable convert button
             convertBtn.disabled = false;
-            
-            // Clear any previous errors
-            hideError();
         }
     }
-    
+
     function startConversion() {
-        if (convertBtn.disabled) return;
+        if (!currentFile) return;
         
-        // Show progress, hide other sections
+        // Show progress
         progressSection.classList.remove('hidden');
         resultSection.classList.add('hidden');
-        errorSection.classList.add('hidden');
+        convertBtn.disabled = true;
         
         // Simulate conversion (replace with actual API call)
         let progress = 0;
         const interval = setInterval(() => {
-            progress += Math.random() * 10;
+            progress += Math.random() * 15;
             updateProgress(progress);
             
             if (progress >= 100) {
                 clearInterval(interval);
-                showResult();
+                completeConversion();
             }
         }, 300);
     }
-    
+
     function updateProgress(percent) {
         const progress = Math.min(100, Math.max(0, Math.round(percent)));
         progressFill.style.width = `${progress}%`;
         
-        // Update progress text based on stage
         if (progress < 30) {
-            progressText.textContent = 'Uploading your file...';
+            progressText.textContent = 'Uploading file...';
         } else if (progress < 70) {
-            progressText.textContent = 'Converting to Word format...';
-        } else if (progress < 100) {
-            progressText.textContent = 'Finalizing document...';
+            progressText.textContent = 'Converting to Word...';
         } else {
-            progressText.textContent = 'Conversion complete!';
+            progressText.textContent = 'Finalizing document...';
         }
     }
-    
-    function showResult() {
+
+    function completeConversion() {
         progressSection.classList.add('hidden');
         resultSection.classList.remove('hidden');
         
-        // Set download link (in real implementation, this would be the actual file URL)
+        // Create download URL for the converted file
         const format = document.getElementById('format').value;
-        const fileName = fileInput.files[0].name.replace('.pdf', '') + '.' + format;
-        downloadBtn.setAttribute('download', fileName);
+        const fileName = currentFile.name.replace('.pdf', `.${format}`);
+        
+        // In a real implementation, this would be the actual converted file
+        // For demo, we'll create a dummy download
+        convertedFileUrl = URL.createObjectURL(new Blob(['Dummy Word file content'], { type: 'application/msword' }));
+        downloadBtn.href = convertedFileUrl;
+        downloadBtn.download = fileName;
     }
-    
-    function showError(message) {
-        errorSection.classList.remove('hidden');
-        errorSection.querySelector('h3').textContent = message || 'Conversion Failed';
-        convertBtn.disabled = true;
+
+    function downloadFile(e) {
+        if (!convertedFileUrl) {
+            e.preventDefault();
+            alert('File not ready yet');
+        }
+        // The actual download will proceed automatically
     }
-    
-    function hideError() {
-        errorSection.classList.add('hidden');
-    }
-    
-    function resetConverter() {
-        fileInput.value = '';
-        fileInfo.innerHTML = '';
-        convertBtn.disabled = true;
-        progressSection.classList.add('hidden');
-        resultSection.classList.add('hidden');
-        errorSection.classList.add('hidden');
-    }
-    
+
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
