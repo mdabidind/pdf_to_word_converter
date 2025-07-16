@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM Elements
+    // Initialize all elements
     const fileInput = document.getElementById('file-input');
     const dropZone = document.getElementById('drop-zone');
     const fileInfo = document.getElementById('file-info');
@@ -7,51 +7,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressSection = document.getElementById('progress-section');
     const resultSection = document.getElementById('result-section');
     const errorSection = document.getElementById('error-section');
+    const progressFill = document.querySelector('.progress-fill');
+    const progressText = document.getElementById('progress-text');
     const downloadBtn = document.getElementById('download-btn');
     const retryBtn = document.getElementById('retry-btn');
-    const progressFill = document.getElementById('progress-fill');
-    const progressText = document.getElementById('progress-text');
-    const errorMessage = document.getElementById('error-message');
-
-    // State
-    let currentFile = null;
-    let conversionInProgress = false;
-
-    // Event Listeners
+    
+    // Ensure all status sections are hidden initially
+    progressSection.classList.add('hidden');
+    resultSection.classList.add('hidden');
+    errorSection.classList.add('hidden');
+    
+    // File selection handlers
     dropZone.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', handleFileSelect);
-    convertBtn.addEventListener('click', startConversion);
-    retryBtn.addEventListener('click', resetConverter);
-
-    // Drag and Drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
-        dropZone.addEventListener(event, preventDefaults, false);
+    
+    // Drag and drop handlers
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
     });
-
-    ['dragenter', 'dragover'].forEach(event => {
-        dropZone.addEventListener(event, highlightDropZone, false);
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
     });
-
-    ['dragleave', 'drop'].forEach(event => {
-        dropZone.addEventListener(event, unhighlightDropZone, false);
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
     });
-
+    
     dropZone.addEventListener('drop', handleDrop, false);
-
-    // Functions
+    
+    // Conversion button handler
+    convertBtn.addEventListener('click', startConversion);
+    
+    // Retry button handler
+    retryBtn.addEventListener('click', resetConverter);
+    
     function preventDefaults(e) {
         e.preventDefault();
         e.stopPropagation();
     }
-
-    function highlightDropZone() {
+    
+    function highlight() {
         dropZone.classList.add('highlight');
     }
-
-    function unhighlightDropZone() {
+    
+    function unhighlight() {
         dropZone.classList.remove('highlight');
     }
-
+    
     function handleDrop(e) {
         const dt = e.dataTransfer;
         const files = dt.files;
@@ -59,119 +62,104 @@ document.addEventListener('DOMContentLoaded', () => {
             handleFileSelect({ target: { files } });
         }
     }
-
+    
     function handleFileSelect(e) {
         const files = e.target.files;
         if (files.length) {
-            currentFile = files[0];
+            const file = files[0];
             
             // Validate file
-            if (!currentFile.name.toLowerCase().endsWith('.pdf')) {
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
                 showError('Please select a PDF file');
-                convertBtn.disabled = true;
                 return;
             }
             
             // Validate file size (10MB max)
-            if (currentFile.size > 10 * 1024 * 1024) {
+            if (file.size > 10 * 1024 * 1024) {
                 showError('File too large (max 10MB)');
-                convertBtn.disabled = true;
                 return;
             }
             
+            // Display file info
             fileInfo.innerHTML = `
-                <strong>${currentFile.name}</strong><br>
-                <small>${formatFileSize(currentFile.size)}</small>
+                <strong>${file.name}</strong><br>
+                <small>${formatFileSize(file.size)}</small>
             `;
             
+            // Enable convert button
             convertBtn.disabled = false;
+            
+            // Clear any previous errors
             hideError();
         }
     }
-
-    async function startConversion() {
-        if (!currentFile || conversionInProgress) return;
+    
+    function startConversion() {
+        if (convertBtn.disabled) return;
         
-        conversionInProgress = true;
-        convertBtn.disabled = true;
-        showProgress();
-        hideError();
-        hideResult();
+        // Show progress, hide other sections
+        progressSection.classList.remove('hidden');
+        resultSection.classList.add('hidden');
+        errorSection.classList.add('hidden');
         
-        try {
-            // Simulate conversion process (replace with actual API call)
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += Math.random() * 10;
-                updateProgress(progress);
-                
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    conversionInProgress = false;
-                    showResult();
-                    
-                    // Set download link (in real implementation, this would be the actual file URL)
-                    const format = document.getElementById('format').value;
-                    const fileName = currentFile.name.replace('.pdf', '') + '.' + format;
-                    downloadBtn.setAttribute('download', fileName);
-                }
-            }, 300);
+        // Simulate conversion (replace with actual API call)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += Math.random() * 10;
+            updateProgress(progress);
             
-        } catch (error) {
-            console.error("Conversion error:", error);
-            showError(error.message || "Conversion failed. Please try again.");
-            conversionInProgress = false;
+            if (progress >= 100) {
+                clearInterval(interval);
+                showResult();
+            }
+        }, 300);
+    }
+    
+    function updateProgress(percent) {
+        const progress = Math.min(100, Math.max(0, Math.round(percent)));
+        progressFill.style.width = `${progress}%`;
+        
+        // Update progress text based on stage
+        if (progress < 30) {
+            progressText.textContent = 'Uploading your file...';
+        } else if (progress < 70) {
+            progressText.textContent = 'Converting to Word format...';
+        } else if (progress < 100) {
+            progressText.textContent = 'Finalizing document...';
+        } else {
+            progressText.textContent = 'Conversion complete!';
         }
     }
-
-    function updateProgress(value) {
-        const percent = Math.min(100, Math.max(0, Math.round(value)));
-        progressFill.style.width = percent + '%';
-        progressText.textContent = getProgressMessage(percent);
-    }
-
-    function getProgressMessage(percent) {
-        if (percent < 30) return "Uploading your file...";
-        if (percent < 70) return "Converting to Word format...";
-        if (percent < 100) return "Finalizing document...";
-        return "Conversion complete!";
-    }
-
-    function showProgress() {
-        progressSection.classList.remove('hidden');
-    }
-
-    function hideProgress() {
-        progressSection.classList.add('hidden');
-    }
-
+    
     function showResult() {
+        progressSection.classList.add('hidden');
         resultSection.classList.remove('hidden');
+        
+        // Set download link (in real implementation, this would be the actual file URL)
+        const format = document.getElementById('format').value;
+        const fileName = fileInput.files[0].name.replace('.pdf', '') + '.' + format;
+        downloadBtn.setAttribute('download', fileName);
     }
-
-    function hideResult() {
-        resultSection.classList.add('hidden');
-    }
-
+    
     function showError(message) {
-        errorMessage.textContent = message;
         errorSection.classList.remove('hidden');
+        errorSection.querySelector('h3').textContent = message || 'Conversion Failed';
+        convertBtn.disabled = true;
     }
-
+    
     function hideError() {
         errorSection.classList.add('hidden');
     }
-
+    
     function resetConverter() {
-        currentFile = null;
         fileInput.value = '';
         fileInfo.innerHTML = '';
         convertBtn.disabled = true;
-        hideProgress();
-        hideResult();
-        hideError();
+        progressSection.classList.add('hidden');
+        resultSection.classList.add('hidden');
+        errorSection.classList.add('hidden');
     }
-
+    
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
