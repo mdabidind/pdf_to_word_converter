@@ -80,45 +80,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             updateProgress(20, "Uploading file...");
-            const formData = new FormData();
-            formData.append('pdf', currentFile);
-            formData.append('format', document.getElementById('format').value);
+            await simulateDelay(1000);
 
             updateProgress(40, "Converting to Word...");
-            const response = await fetch('YOUR_BACKEND_ENDPOINT', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
-            }
+            await simulateDelay(2000);
 
             updateProgress(80, "Preparing download...");
-            const wordBlob = await response.blob();
-            createDownloadLink(wordBlob);
+
+            // Simulated final converted file URL (GitHub Pages)
+            const fileName = currentFile.name.replace('.pdf', '') + '.docx';
+            convertedFileUrl = `https://mdabidind.github.io/pdf_to_word_converter/output/converted_xyz.docx`;
+
+            downloadBtn.href = convertedFileUrl;
+            downloadBtn.download = fileName;
+            downloadBtn.onclick = null;
 
             updateProgress(100, "Conversion complete!");
             setTimeout(showResult, 500);
-
         } catch (error) {
             console.error("Conversion error:", error);
             showError(error.message || "Conversion failed. Please try again.");
             hideProgress();
         }
-    }
-
-    function createDownloadLink(blob) {
-        if (convertedFileUrl) {
-            URL.revokeObjectURL(convertedFileUrl);
-        }
-
-        convertedFileUrl = URL.createObjectURL(blob);
-        const fileName = currentFile.name.replace('.pdf', '') + '.' + document.getElementById('format').value;
-
-        downloadBtn.href = convertedFileUrl;
-        downloadBtn.download = fileName;
-        downloadBtn.onclick = null;
     }
 
     function updateProgress(percent, message) {
@@ -154,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetConverter() {
         if (convertedFileUrl) {
-            URL.revokeObjectURL(convertedFileUrl);
             convertedFileUrl = null;
         }
         fileInput.value = '';
@@ -173,9 +155,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
+    function simulateDelay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     window.addEventListener('beforeunload', () => {
         if (convertedFileUrl) {
-            URL.revokeObjectURL(convertedFileUrl);
+            convertedFileUrl = null;
         }
     });
 });
