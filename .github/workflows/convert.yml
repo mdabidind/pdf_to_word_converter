@@ -28,12 +28,12 @@ jobs:
 
       - name: Run conversion script
         run: |
-          python convert_script.py  # Replace with your actual script name
+          python convert_script.py  # 🛠 Replace with your actual converter script
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v2
+      - name: Upload output to GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          path: 'output'  # Folder containing converted files
+          path: output  # Folder where your converted files are stored
 
       - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v4
