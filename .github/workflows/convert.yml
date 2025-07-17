@@ -31,7 +31,7 @@ jobs:
       - name: Run conversion script
         run: |
           mkdir -p output
-          python convert_script.py  # Make sure this exists and creates output/converted_xyz.docx
+          python convert_script.py
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v2
