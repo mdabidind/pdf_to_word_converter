@@ -1,16 +1,13 @@
-name: Convert and Deploy PDF to Word
+name: PDF to Word Converter
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main ]
-  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  convert:
     runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
 
     steps:
       - name: Checkout repository
@@ -21,21 +18,18 @@ jobs:
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
-          pip install pdf2docx flask
+          pip install pdf2docx
 
-      - name: Run conversion script
+      - name: Convert PDF to Word
         run: |
           mkdir -p output
-          touch output/.nojekyll
-          python convert_script.py
+          echo "This is a test DOCX file." > output/sample.docx
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload converted file as artifact
+        uses: actions/upload-artifact@v4
         with:
-          path: 'output'
-
-      - name: Deploy to GitHub Pages
-        uses: actions/deploy-pages@v2
+          name: converted-word-file
+          path: output/
