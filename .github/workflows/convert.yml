@@ -1,36 +1,39 @@
-name: Deploy to GitHub Pages
+name: Convert and Deploy PDF to Word
 
 on:
   push:
-    branches: [ main ]  # Trigger on pushes to main branch
-  workflow_dispatch:    # Allow manual triggers
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      pages: write      # Needed to deploy to Pages
-      id-token: write   # Needed for auth
+      pages: write
+      id-token: write
 
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '18'
+          python-version: '3.10'
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          python -m pip install --upgrade pip
+          pip install pdf2docx flask
 
-      - name: Build project
-        run: npm run build  # Replace with your build command
+      - name: Run conversion script
+        run: |
+          python convert_script.py  # Replace with your actual script name
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
-          path: 'dist'  # Path to your build output directory
+          path: 'output'  # Folder containing converted files
 
       - name: Deploy to GitHub Pages
         uses: actions/deploy-pages@v2
