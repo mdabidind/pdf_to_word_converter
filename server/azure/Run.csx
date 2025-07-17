@@ -11,19 +11,19 @@ using Newtonsoft.Json;
 public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceWriter log)
 {
     try {
-        // Read request body
-        var content = await req.Content.ReadAsStringAsync();
-        dynamic data = JsonConvert.DeserializeObject(content);
+        // Read and parse request body
+        string requestBody = await req.Content.ReadAsStringAsync();
+        dynamic data = JsonConvert.DeserializeObject(requestBody);
         
-        // Get file data
+        // Get parameters
         byte[] fileBytes = Convert.FromBase64String((string)data.file);
         string format = data.format ?? "docx";
         string fileName = data.filename ?? "document.pdf";
         
         // Create temp directory
-        var tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        string tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
         Directory.CreateDirectory(tempDir);
-        var pdfPath = Path.Combine(tempDir, fileName);
+        string pdfPath = Path.Combine(tempDir, fileName);
         
         // Save PDF
         File.WriteAllBytes(pdfPath, fileBytes);
@@ -42,28 +42,24 @@ public static async Task<HttpResponseMessage> Run(HttpRequestMessage req, TraceW
         await process.WaitForExitAsync();
         
         // Get converted file
-        var outputName = Path.GetFileNameWithoutExtension(fileName) + $".{format}";
-        var outputPath = Path.Combine(tempDir, outputName);
+        string outputName = Path.GetFileNameWithoutExtension(fileName) + $".{format}";
+        string outputPath = Path.Combine(tempDir, outputName);
+        byte[] outputBytes = File.ReadAllBytes(outputPath);
+        string base64Output = Convert.ToBase64String(outputBytes);
         
-        var result = new HttpResponseMessage(HttpStatusCode.OK) {
-            Content = new ByteArrayContent(File.ReadAllBytes(outputPath))
+        // Prepare response
+        var response = new {
+            file = base64Output,
+            filename = outputName,
+            format = format
         };
         
-        result.Content.Headers.ContentDisposition = new ContentDispositionHeaderValue("attachment") {
-            FileName = outputName
-        };
-        
-        result.Content.Headers.ContentType = new MediaTypeHeaderValue(
-            format == "docx" 
-                ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" 
-                : "application/msword");
-        
-        return result;
+        return req.CreateResponse(HttpStatusCode.OK, response);
     }
     catch (Exception ex) {
-        return new HttpResponseMessage(HttpStatusCode.InternalServerError) {
-            Content = new StringContent($"Conversion failed: {ex.Message}")
-        };
+        return req.CreateResponse(HttpStatusCode.InternalServerError, new {
+            error = ex.Message
+        });
     }
     finally {
         // Clean up temp directory
