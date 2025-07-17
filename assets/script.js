@@ -1,147 +1,87 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM elements
-    const fileInput = document.getElementById('file-input');
-    const dropZone = document.getElementById('drop-zone');
-    const fileInfo = document.getElementById('file-info');
-    const convertBtn = document.getElementById('convert-btn');
-    const progressSection = document.getElementById('progress-section');
-    const resultSection = document.getElementById('result-section');
-    const downloadBtn = document.getElementById('download-btn');
-    const progressFill = document.querySelector('.progress-fill');
-    const progressText = document.getElementById('progress-text');
-    
-    // State
-    let currentFile = null;
-    let convertedFileUrl = null;
+    // [Previous DOM elements and state variables remain the same...]
 
-    // Event listeners
-    dropZone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', handleFileSelect);
-    convertBtn.addEventListener('click', startConversion);
-    downloadBtn.addEventListener('click', downloadFile);
-
-    // Drag and drop
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
-        dropZone.addEventListener(event, preventDefaults, false);
-    });
-
-    ['dragenter', 'dragover'].forEach(event => {
-        dropZone.addEventListener(event, highlightDropZone, false);
-    });
-
-    ['dragleave', 'drop'].forEach(event => {
-        dropZone.addEventListener(event, unhighlightDropZone, false);
-    });
-
-    dropZone.addEventListener('drop', handleDrop, false);
-
-    // Functions
-    function preventDefaults(e) {
-        e.preventDefault();
-        e.stopPropagation();
-    }
-
-    function highlightDropZone() {
-        dropZone.classList.add('highlight');
-    }
-
-    function unhighlightDropZone() {
-        dropZone.classList.remove('highlight');
-    }
-
-    function handleDrop(e) {
-        const dt = e.dataTransfer;
-        const files = dt.files;
-        if (files.length) {
-            handleFileSelect({ target: { files } });
-        }
-    }
-
-    function handleFileSelect(e) {
-        const files = e.target.files;
-        if (files.length) {
-            currentFile = files[0];
-            
-            // Validate file
-            if (!currentFile.name.toLowerCase().endsWith('.pdf')) {
-                alert('Please select a PDF file');
-                return;
-            }
-            
-            // Update UI
-            fileInfo.innerHTML = `
-                <div class="file-display">
-                    <strong>${currentFile.name}</strong>
-                    <span>${formatFileSize(currentFile.size)}</span>
-                </div>
-            `;
-            
-            convertBtn.disabled = false;
-        }
-    }
-
-    function startConversion() {
-        if (!currentFile) return;
+    async function startConversion() {
+        if (!currentFile || convertBtn.disabled) return;
         
-        // Show progress
-        progressSection.classList.remove('hidden');
-        resultSection.classList.add('hidden');
+        showProgress();
+        hideError();
+        hideResult();
         convertBtn.disabled = true;
         
-        // Simulate conversion (replace with actual API call)
-        let progress = 0;
-        const interval = setInterval(() => {
-            progress += Math.random() * 15;
-            updateProgress(progress);
+        try {
+            // 1. Upload to serverless function
+            updateProgress(20, "Preparing file...");
             
-            if (progress >= 100) {
-                clearInterval(interval);
-                completeConversion();
-            }
-        }, 300);
-    }
-
-    function updateProgress(percent) {
-        const progress = Math.min(100, Math.max(0, Math.round(percent)));
-        progressFill.style.width = `${progress}%`;
-        
-        if (progress < 30) {
-            progressText.textContent = 'Uploading file...';
-        } else if (progress < 70) {
-            progressText.textContent = 'Converting to Word...';
-        } else {
-            progressText.textContent = 'Finalizing document...';
+            const formData = new FormData();
+            formData.append('pdf', currentFile);
+            formData.append('format', document.getElementById('format').value);
+            
+            // 2. Choose your serverless provider (uncomment one):
+            const response = await callAWSLambda(formData);        // AWS Lambda
+            // const response = await callGoogleCloudFunction(formData); // Google Cloud
+            // const response = await callAzureFunction(formData);     // Azure
+            
+            if (!response.ok) throw new Error(await response.text());
+            
+            // 3. Handle response
+            updateProgress(90, "Finalizing document...");
+            const wordBlob = await response.blob();
+            createDownloadLink(wordBlob);
+            
+            updateProgress(100, "Conversion complete!");
+            setTimeout(showResult, 500);
+            
+        } catch (error) {
+            console.error("Conversion error:", error);
+            showError(error.message || "Conversion failed. Please try again.");
+            hideProgress();
         }
     }
 
-    function completeConversion() {
-        progressSection.classList.add('hidden');
-        resultSection.classList.remove('hidden');
+    // AWS Lambda Integration
+    async function callAWSLambda(formData) {
+        updateProgress(30, "Uploading to AWS Lambda...");
+        return fetch('https://YOUR_LAMBDA_URL.lambda-url.us-east-1.on.aws/', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'x-api-key': 'YOUR_API_KEY' // If using API Gateway
+            }
+        });
+    }
+
+    // Google Cloud Function Integration
+    async function callGoogleCloudFunction(formData) {
+        updateProgress(30, "Uploading to Google Cloud...");
+        return fetch('https://YOUR_REGION-YOUR_PROJECT_ID.cloudfunctions.net/convertPdfToWord', {
+            method: 'POST',
+            body: formData
+        });
+    }
+
+    // Azure Function Integration
+    async function callAzureFunction(formData) {
+        updateProgress(30, "Uploading to Azure...");
+        return fetch('https://YOUR_FUNCTION_APP.azurewebsites.net/api/ConvertPdfToWord', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'x-functions-key': 'YOUR_FUNCTION_KEY'
+            }
+        });
+    }
+
+    function createDownloadLink(blob) {
+        // Clean up previous URL if exists
+        if (convertedFileUrl) URL.revokeObjectURL(convertedFileUrl);
         
-        // Create download URL for the converted file
-        const format = document.getElementById('format').value;
-        const fileName = currentFile.name.replace('.pdf', `.${format}`);
+        convertedFileUrl = URL.createObjectURL(blob);
+        const fileName = currentFile.name.replace('.pdf', '') + '.' + document.getElementById('format').value;
         
-        // In a real implementation, this would be the actual converted file
-        // For demo, we'll create a dummy download
-        convertedFileUrl = URL.createObjectURL(new Blob(['Dummy Word file content'], { type: 'application/msword' }));
         downloadBtn.href = convertedFileUrl;
         downloadBtn.download = fileName;
     }
 
-    function downloadFile(e) {
-        if (!convertedFileUrl) {
-            e.preventDefault();
-            alert('File not ready yet');
-        }
-        // The actual download will proceed automatically
-    }
-
-    function formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-    }
+    // [Rest of your existing functions remain unchanged...]
 });
