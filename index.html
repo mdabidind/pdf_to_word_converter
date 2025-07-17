@@ -3,49 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF to Word Converter</title>
+    <title>Premium PDF to Word Converter</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap">
     <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
-    <div class="container">
+    <div class="app-container">
         <div class="converter-card">
-            <h1>PDF to Word</h1>
-            <p class="subtitle">Convert your PDF documents to editable Word files</p>
-            
-            <div id="upload-section">
-                <div id="drop-zone">
-                    <svg class="upload-icon" viewBox="0 0 24 24">
-                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+            <div class="card-header">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24" width="28" height="28">
+                        <path fill="#4a6bff" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
                     </svg>
-                    <p>Drop PDF file here</p>
-                    <p class="support-text">or click to browse files</p>
-                    <input type="file" id="file-input" accept=".pdf">
+                    <h1>PDF to Word</h1>
                 </div>
-                <div id="file-info"></div>
+                <p class="subtitle">Convert your PDF documents to editable Word files</p>
             </div>
-            
-            <div class="options">
-                <label for="format">Output Format:</label>
-                <select id="format">
-                    <option value="docx">DOCX (Modern Word)</option>
-                    <option value="doc">DOC (Legacy Word)</option>
-                </select>
-                <button id="convert-btn" disabled>Convert to Word</button>
-            </div>
-            
-            <div id="progress-section" class="hidden">
-                <div class="progress-bar">
-                    <div class="progress-fill"></div>
+
+            <div class="card-body">
+                <div id="upload-section">
+                    <div id="drop-zone" class="file-drop-area">
+                        <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
+                            <path fill="#4a6bff" d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                        </svg>
+                        <h3>Drop PDF file here</h3>
+                        <p class="support-text">or click to browse files</p>
+                        <input type="file" id="file-input" accept=".pdf">
+                    </div>
+                    <div id="file-info" class="file-info"></div>
                 </div>
-                <p id="progress-text">Preparing conversion...</p>
-            </div>
-            
-            <div id="result-section" class="hidden">
-                <svg class="success-icon" viewBox="0 0 24 24">
-                    <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                <h3>Conversion Complete!</h3>
-                <a id="download-btn" class="download-btn">Download Word File</a>
+
+                <div class="conversion-options">
+                    <div class="option-group">
+                        <label for="format">Output Format:</label>
+                        <select id="format" class="styled-select">
+                            <option value="docx">DOCX (Modern Word)</option>
+                            <option value="doc">DOC (Legacy Word 97-2003)</option>
+                        </select>
+                    </div>
+
+                    <button id="convert-btn" class="primary-btn" disabled>
+                        <span class="btn-text">Convert to Word</span>
+                        <svg class="btn-icon" viewBox="0 0 24 24" width="20" height="20">
+                            <path fill="currentColor" d="M13,9H18.5L13,3.5V9M6,2H14L20,8V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M11,15V12H9V15H6V17H9V20H11V17H14V15H11Z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="progress-section" class="hidden">
+                    <div class="progress-container">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">Preparing conversion...</div>
+                    </div>
+                </div>
+
+                <div id="result-section" class="hidden">
+                    <div class="success-message">
+                        <svg viewBox="0 0 24 24" width="48" height="48">
+                            <path fill="#4CAF50" d="M21,7L9,19L3.5,13.5L4.91,12.09L9,16.17L19.59,5.59L21,7Z"/>
+                        </svg>
+                        <h3>Conversion Complete!</h3>
+                        <a id="download-btn" class="download-btn" download>
+                            Download Word File
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor" d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="error-section" class="hidden">
+                    <div class="error-message">
+                        <svg viewBox="0 0 24 24" width="48" height="48">
+                            <path fill="#F44336" d="M12,2C17.53,2 22,6.47 22,12C22,17.53 17.53,22 12,22C6.47,22 2,17.53 2,12C2,6.47 6.47,2 12,2M15.59,7L12,10.59L8.41,7L7,8.41L10.59,12L7,15.59L8.41,17L12,13.41L15.59,17L17,15.59L13.41,12L17,8.41L15.59,7Z"/>
+                        </svg>
+                        <h3 id="error-message">Conversion Failed</h3>
+                        <button id="retry-btn" class="secondary-btn">Try Again</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
