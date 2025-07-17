@@ -1,53 +1,36 @@
-name: PDF to Word Conversion
+name: Deploy to GitHub Pages
 
 on:
-  workflow_dispatch:
-    inputs:
-      file_id:
-        description: 'Unique file ID'
-        required: true
-      format:
-        description: 'Output format'
-        required: true
-        default: 'docx'
+  push:
+    branches: [ main ]  # Trigger on pushes to main branch
+  workflow_dispatch:    # Allow manual triggers
 
 jobs:
-  convert:
+  build-and-deploy:
     runs-on: ubuntu-latest
+    permissions:
+      pages: write      # Needed to deploy to Pages
+      id-token: write   # Needed for auth
+
     steps:
-      - uses: actions/checkout@v3
-      
-      - name: Download uploaded file
-        run: |
-          mkdir -p uploads
-          curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3.raw" \
-            -o "uploads/${{ inputs.file_id }}.pdf" \
-            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf"
-            
-      - name: Install LibreOffice
-        run: sudo apt-get update && sudo apt-get install -y libreoffice
-      
-      - name: Convert file
-        run: |
-          mkdir -p converted
-          libreoffice --headless --convert-to ${{ inputs.format }} \
-            --outdir converted/ \
-            uploads/${{ inputs.file_id }}.pdf
-          
-          # Rename output to known filename
-          mv converted/*.${{ inputs.format }} converted/output.${{ inputs.format }}
-          
-      - name: Upload result
-        uses: actions/upload-artifact@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
         with:
-          name: converted-${{ inputs.file_id }}
-          path: converted/output.${{ inputs.format }}
-          retention-days: 1
-      
-      - name: Cleanup
-        run: |
-          curl -X DELETE -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf" \
-            -d '{"message":"Cleanup after conversion", "sha":"$(curl -s -H "Authorization: token ${{ secrets.GH_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/contents/temp_uploads/${{ inputs.file_id }}.pdf" | jq -r .sha)"}'
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build project
+        run: npm run build  # Replace with your build command
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: 'dist'  # Path to your build output directory
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
