@@ -13,10 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessage = document.getElementById('error-message');
 
     let currentFile = null;
-    let convertedFileUrl = null;
 
     fileInput.addEventListener('change', handleFileSelect);
-    convertBtn.addEventListener('click', startConversion);
+    convertBtn.addEventListener('click', simulateConversion);
     retryBtn.addEventListener('click', resetConverter);
 
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
@@ -70,38 +69,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    async function startConversion() {
-        if (!currentFile || convertBtn.disabled) return;
-
+    function simulateConversion() {
+        if (!currentFile) return;
         showProgress();
         hideError();
         hideResult();
         convertBtn.disabled = true;
 
-        try {
-            updateProgress(20, "Uploading file...");
-            await simulateDelay(1000);
+        updateProgress(30, "Simulating conversion...");
+        setTimeout(() => {
+            updateProgress(60, "Almost ready...");
+            setTimeout(() => {
+                updateProgress(100, "Conversion complete!");
 
-            updateProgress(40, "Converting to Word...");
-            await simulateDelay(2000);
+                const baseName = currentFile.name.replace(/\.pdf$/i, '');
+                const format = document.getElementById('format').value || 'docx';
+                const fileName = `${baseName}.${format}`;
+                const ghPageUrl = `https://mdabidind.github.io/pdf_to_word_converter/output/${fileName}`;
 
-            updateProgress(80, "Preparing download...");
+                downloadBtn.href = ghPageUrl;
+                downloadBtn.download = fileName;
+                downloadBtn.onclick = null;
 
-            // Simulated final converted file URL (GitHub Pages)
-            const fileName = currentFile.name.replace('.pdf', '') + '.docx';
-            convertedFileUrl = `https://mdabidind.github.io/pdf_to_word_converter/output/converted_xyz.docx`;
-
-            downloadBtn.href = convertedFileUrl;
-            downloadBtn.download = fileName;
-            downloadBtn.onclick = null;
-
-            updateProgress(100, "Conversion complete!");
-            setTimeout(showResult, 500);
-        } catch (error) {
-            console.error("Conversion error:", error);
-            showError(error.message || "Conversion failed. Please try again.");
-            hideProgress();
-        }
+                showResult();
+            }, 1000);
+        }, 1000);
     }
 
     function updateProgress(percent, message) {
@@ -136,9 +128,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function resetConverter() {
-        if (convertedFileUrl) {
-            convertedFileUrl = null;
-        }
         fileInput.value = '';
         fileInfo.innerHTML = 'No file chosen';
         convertBtn.disabled = true;
@@ -154,14 +143,4 @@ document.addEventListener('DOMContentLoaded', () => {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-
-    function simulateDelay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
-
-    window.addEventListener('beforeunload', () => {
-        if (convertedFileUrl) {
-            convertedFileUrl = null;
-        }
-    });
 });
