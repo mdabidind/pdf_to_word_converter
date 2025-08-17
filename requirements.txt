@@ -1,15 +1,12 @@
-Flask
-pytesseract
-pdf2image
-pdfplumber
-tabula-py
-python-docx
-PyMuPDF
-opencv-python
-pandas
-numpy
-Pillow
-requests
-pip install flask-cors
-
-
+Flask==3.0.3
+pdf2docx==0.5.6
+PyMuPDF==1.24.9
+pytesseract==0.3.13
+pdfplumber==0.11.4
+tabula-py==2.9.3
+ocrmypdf==16.2.1
+Pillow==10.4.0
+reportlab==4.2.2
+python-docx==1.1.2
+Werkzeug==3.0.4
+gunicorn==23.0.0
