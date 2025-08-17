@@ -1,0 +1,31 @@
+const txtContent = await page.getTextContent();
+let pageText = txtContent.items.map(item=>item.str).join(" ");
+
+// Smart detection: if mostly empty or garbage → OCR
+const nonLetters = pageText.replace(/[A-Za-z0-9]/g, "").length;
+const ratio = nonLetters / (pageText.length || 1);
+
+if(pageText.trim().length < 30 || ratio > 0.7){
+  // 🔍 OCR fallback
+  statusEl.textContent=`Page ${i}: preparing for OCR...`;
+
+  const viewport = page.getViewport({scale:1.2});
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  await page.render({canvasContext:ctx,viewport:viewport}).promise;
+  const dataUrl = canvas.toDataURL();
+
+  const {data:{text}}=await Tesseract.recognize(dataUrl,"eng",{
+    logger:m=>{
+      if(m.status==="recognizing text"){
+        const pct=Math.round(m.progress*100);
+        statusEl.textContent=`Page ${i}: OCR ${pct}%`;
+      }
+    }
+  });
+  pageText=text;
+} else {
+  statusEl.textContent=`Page ${i}: extracted text directly`;
+}
