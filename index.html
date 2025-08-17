@@ -36,6 +36,9 @@
   </div>
 
 <script>
+/* 🔧 Change this once to your backend server URL */
+const SERVER_URL = "https://yourserver.com";
+
 const dropZone = document.getElementById('dropZone');
 const fileElem = document.getElementById('fileElem');
 const browseBtn = document.getElementById('browseBtn');
@@ -68,13 +71,11 @@ function handleFile(file){
   if(!file || file.type !== 'application/pdf'){ alert('Please select a PDF file'); return; }
   filenameEl.textContent = 'Selected: ' + file.name;
 
-  // prepare form data with field name "file" (Flask expects request.files['file'])
   const form = new FormData();
   form.append('file', file);
 
-  // XHR to show upload progress
   const xhr = new XMLHttpRequest();
-  xhr.open('POST','/upload',true);
+  xhr.open('POST', SERVER_URL + '/upload', true);
 
   xhr.upload.onprogress = function(e){
     if(e.lengthComputable){
@@ -91,7 +92,7 @@ function handleFile(file){
       try{ resp = JSON.parse(xhr.responseText); } catch(err){
         statusEl.textContent = 'Unexpected server response: ' + xhr.responseText; return;
       }
-      statusEl.textContent = 'Upload successful — conversion started (ID hidden). Polling for result...';
+      statusEl.textContent = 'Upload successful — conversion started...';
       pollStatus(resp.id);
     } else {
       statusEl.textContent = 'Upload failed: ' + xhr.status + ' — ' + xhr.responseText;
@@ -106,14 +107,14 @@ let pollTimer = null;
 function pollStatus(id){
   pollTimer = setInterval(async ()=>{
     try{
-      const r = await fetch('/status?id=' + encodeURIComponent(id));
+      const r = await fetch(SERVER_URL + '/status?id=' + encodeURIComponent(id));
       if(r.status!==200){ statusEl.textContent = 'Status request failed'; return; }
       const j = await r.json();
       statusEl.textContent = 'Conversion — ' + j.status + (j.progress?(' : ' + j.progress + '%'):'');
       if(j.status === 'done'){
         clearInterval(pollTimer);
         downloadBtn.style.display='inline-block';
-        downloadBtn.onclick = ()=> { window.location = '/download?file=' + encodeURIComponent(j.out); };
+        downloadBtn.onclick = ()=> { window.location = SERVER_URL + '/download?file=' + encodeURIComponent(j.out); };
         convertAgainBtn.style.display='inline-block';
         convertAgainBtn.onclick = ()=> resetUI();
       }
