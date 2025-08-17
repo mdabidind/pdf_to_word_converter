@@ -36,9 +36,27 @@
   </div>
 
 <script>
-/* 🔧 Change this once to your backend server URL */
-const SERVER_URL = "https://yourserver.com";
+/* ============================================
+   🔧 Backend auto-detection logic
+   ============================================ */
+let SERVER_URL = "";
 
+// 1) If running on localhost → use local Flask server
+if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+  SERVER_URL = "http://127.0.0.1:5000";
+}
+// 2) If running on GitHub Pages or other domain → use same origin (assume backend deployed under same domain)
+else {
+  SERVER_URL = location.origin;  
+  // 👉 If backend is on different server, hardcode here:
+  // SERVER_URL = "https://your-backend-domain.com";
+}
+
+console.log("Using backend:", SERVER_URL);
+
+/* ============================================
+   UI + Upload Logic
+   ============================================ */
 const dropZone = document.getElementById('dropZone');
 const fileElem = document.getElementById('fileElem');
 const browseBtn = document.getElementById('browseBtn');
@@ -99,7 +117,7 @@ function handleFile(file){
     }
   };
 
-  xhr.onerror = function(){ statusEl.textContent = 'Upload error'; }
+  xhr.onerror = function(){ statusEl.textContent = 'Upload error (network/server)'; }
   xhr.send(form);
 }
 
@@ -128,4 +146,3 @@ function pollStatus(id){
 </script>
 </body>
 </html>
-
