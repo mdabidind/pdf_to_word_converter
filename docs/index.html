@@ -37,19 +37,20 @@
 
 <script>
 /* ============================================
-   🔧 Backend auto-detection logic
+   🔧 Backend configuration
    ============================================ */
+
+// Auto-detect local vs hosted
 let SERVER_URL = "";
 
-// 1) If running on localhost → use local Flask server
+// 1) If running locally
 if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
   SERVER_URL = "http://127.0.0.1:5000";
 }
-// 2) If running on GitHub Pages or other domain → use same origin (assume backend deployed under same domain)
+// 2) If running on GitHub Pages or domain
 else {
-  SERVER_URL = location.origin;  
-  // 👉 If backend is on different server, hardcode here:
-  // SERVER_URL = "https://your-backend-domain.com";
+  // 👉 Change this to your backend (Hostinger/VPS)
+  SERVER_URL = "https://your-backend-domain.com"; 
 }
 
 console.log("Using backend:", SERVER_URL);
