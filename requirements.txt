@@ -10,3 +10,6 @@ pandas
 numpy
 Pillow
 requests
+pip install flask-cors
+
+
