@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>PDF → Word Converter (Browser Only)</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PDF → Word Converter (Browser + OCR)</title>
 <style>
   body{font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f6ff}
   .card{width:820px;background:white;padding:22px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
@@ -18,73 +18,74 @@
 
     <div id="dropZone" class="drop">
       <p class="muted">Drag & drop PDF here or <button id="browseBtn" class="btn" type="button">Browse</button></p>
-      <input id="fileElem" type="file" accept="application/pdf" style="display:none" />
+      <input id="fileElem" type="file" accept="application/pdf" style="display:none"/>
       <div id="status" style="margin-top:10px;color:#333"></div>
     </div>
 
     <a id="downloadLink" class="btn" style="display:none;margin-top:10px;">Download Word File</a>
   </div>
 
-<script src="https://cdn.jsdelivr.net/pyodide/v0.26.1/full/pyodide.js"></script>
+<!-- PDF.js for extracting text -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- Tesseract.js for OCR -->
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<!-- docx.js for generating Word files -->
+<script src="https://cdn.jsdelivr.net/npm/docx@8.0.1/build/index.umd.js"></script>
+
 <script>
-let pyodideReady = false;
+const dropZone=document.getElementById('dropZone');
+const fileElem=document.getElementById('fileElem');
+const browseBtn=document.getElementById('browseBtn');
+const statusEl=document.getElementById('status');
+const downloadLink=document.getElementById('downloadLink');
 
-async function initPyodide() {
-  const pyodide = await loadPyodide();
-  await pyodide.loadPackage("micropip");
-  await pyodide.runPythonAsync(`
-    import micropip
-    await micropip.install("pdf2docx")
-  `);
-  window.pyodide = pyodide;
-  pyodideReady = true;
-  document.getElementById("status").textContent = "Ready for conversion!";
-}
-initPyodide();
-
-const dropZone = document.getElementById('dropZone');
-const fileElem = document.getElementById('fileElem');
-const browseBtn = document.getElementById('browseBtn');
-const statusEl = document.getElementById('status');
-const downloadLink = document.getElementById('downloadLink');
-
-browseBtn.addEventListener('click', ()=> fileElem.click());
-dropZone.addEventListener('dragover', e=> e.preventDefault());
-dropZone.addEventListener('drop', e=>{
-  e.preventDefault(); 
-  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); 
-});
-fileElem.addEventListener('change', e=>{
-  if(e.target.files.length) handleFile(e.target.files[0]); 
-});
+browseBtn.addEventListener('click',()=>fileElem.click());
+dropZone.addEventListener('dragover',e=>e.preventDefault());
+dropZone.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
+fileElem.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0]);});
 
 async function handleFile(file){
-  if(!pyodideReady){ alert("Python not ready yet!"); return; }
-  if(!file || file.type !== "application/pdf"){ alert("Please select a PDF file"); return; }
-  
-  statusEl.textContent = "Converting " + file.name + "... please wait";
+  if(!file || file.type!=="application/pdf"){alert("Please select a PDF file");return;}
+  statusEl.textContent="Processing "+file.name+"...";
 
-  const arrayBuffer = await file.arrayBuffer();
-  const uint8Array = new Uint8Array(arrayBuffer);
-  pyodide.FS.writeFile("input.pdf", uint8Array);
+  const arrayBuffer=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
+  let fullText="";
 
-  await pyodide.runPythonAsync(`
-    from pdf2docx import Converter
-    cv = Converter("input.pdf")
-    cv.convert("output.docx", start=0, end=None)
-    cv.close()
-  `);
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const txtContent=await page.getTextContent();
+    let pageText=txtContent.items.map(item=>item.str).join(" ");
+    if(pageText.trim().length<10){
+      // Page seems scanned → OCR fallback
+      statusEl.textContent=`Page ${i}: running OCR...`;
+      const viewport=page.getViewport({scale:2.0});
+      const canvas=document.createElement("canvas");
+      const ctx=canvas.getContext("2d");
+      canvas.width=viewport.width;
+      canvas.height=viewport.height;
+      await page.render({canvasContext:ctx,viewport:viewport}).promise;
+      const dataUrl=canvas.toDataURL();
+      const {data:{text}}=await Tesseract.recognize(dataUrl,"eng");
+      pageText=text;
+    }
+    fullText+=`\n\n${pageText}`;
+  }
 
-  const result = pyodide.FS.readFile("output.docx");
-  const blob = new Blob([result], { type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" });
-  const url = URL.createObjectURL(blob);
+  // Build Word doc with docx.js
+  const {Document,Packer,Paragraph,TextRun}=window.docx;
+  const doc=new Document({sections:[{properties:{},children:[
+    new Paragraph({children:[new TextRun(fullText)]})
+  ]}]});
 
-  downloadLink.href = url;
-  downloadLink.download = file.name.replace(/\.pdf$/i, "") + ".docx";
-  downloadLink.style.display = "inline-block";
-  downloadLink.textContent = "Download " + downloadLink.download;
+  const blob=await Packer.toBlob(doc);
+  const url=URL.createObjectURL(blob);
+  downloadLink.href=url;
+  downloadLink.download=file.name.replace(/\.pdf$/i,"")+".docx";
+  downloadLink.style.display="inline-block";
+  downloadLink.textContent="Download "+downloadLink.download;
 
-  statusEl.textContent = "Conversion finished!";
+  statusEl.textContent="Conversion finished!";
 }
 </script>
 </body>
