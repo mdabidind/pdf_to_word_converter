@@ -1,0 +1,12 @@
+Flask
+pytesseract
+pdf2image
+pdfplumber
+tabula-py
+python-docx
+PyMuPDF
+opencv-python
+pandas
+numpy
+Pillow
+requests
