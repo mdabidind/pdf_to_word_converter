@@ -56,9 +56,11 @@ async function handleFile(file){
     const page=await pdf.getPage(i);
     const txtContent=await page.getTextContent();
     let pageText=txtContent.items.map(item=>item.str).join(" ");
+
     if(pageText.trim().length<10){
       // Page seems scanned → OCR fallback
       statusEl.textContent=`Page ${i}: running OCR...`;
+
       const viewport=page.getViewport({scale:2.0});
       const canvas=document.createElement("canvas");
       const ctx=canvas.getContext("2d");
@@ -66,8 +68,20 @@ async function handleFile(file){
       canvas.height=viewport.height;
       await page.render({canvasContext:ctx,viewport:viewport}).promise;
       const dataUrl=canvas.toDataURL();
-      const {data:{text}}=await Tesseract.recognize(dataUrl,"eng");
+
+      // 🔥 OCR with progress
+      const {data:{text}}=await Tesseract.recognize(dataUrl,"eng",{
+        logger:m=>{
+          if(m.status==="recognizing text"){
+            const pct=Math.round(m.progress*100);
+            statusEl.textContent=`Page ${i}: OCR ${pct}%`;
+          }
+        }
+      });
+
       pageText=text;
+    } else {
+      statusEl.textContent=`Page ${i}: text extracted directly`;
     }
     fullText+=`\n\n${pageText}`;
   }
