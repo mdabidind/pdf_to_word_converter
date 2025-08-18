@@ -3,34 +3,43 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>PDF → Word Converter (Browser + OCR)</title>
+<title>PDF → Word Converter (with OCR)</title>
 <style>
-  body{font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f6ff}
-  .card{width:820px;background:white;padding:22px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
-  .drop{border:3px dashed rgba(99,102,241,.16);padding:30px;border-radius:10px;text-align:center;cursor:pointer}
+  body{font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#eef2ff;margin:0}
+  .card{width:820px;max-width:95%;background:white;padding:22px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
+  .drop{border:3px dashed rgba(99,102,241,.4);padding:30px;border-radius:10px;text-align:center;cursor:pointer;background:#f9f9ff}
   .muted{color:#6b7280;font-size:13px}
   .btn{padding:8px 14px;border-radius:8px;border:none;background:#4f46e5;color:#fff;cursor:pointer}
+  #downloadLink{display:none;margin-top:10px}
+  .progress-container{width:100%;background:#e5e7eb;border-radius:8px;overflow:hidden;margin-top:15px;height:20px;display:none}
+  .progress-bar{height:100%;width:0;background:#4f46e5;transition:width 0.3s}
 </style>
 </head>
 <body>
   <div class="card">
-    <h2>PDF → Word Converter (GitHub Pages)</h2>
+    <h2>PDF → Word Converter (OCR Enabled)</h2>
 
     <div id="dropZone" class="drop">
       <p class="muted">Drag & drop PDF here or <button id="browseBtn" class="btn" type="button">Browse</button></p>
       <input id="fileElem" type="file" accept="application/pdf" style="display:none"/>
+      <div style="margin-top:10px;">
+        <label><input type="checkbox" id="forceOcr"> Force OCR (all pages)</label>
+      </div>
       <div id="status" style="margin-top:10px;color:#333"></div>
+      <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
     </div>
 
-    <a id="downloadLink" class="btn" style="display:none;margin-top:10px;">Download Word File</a>
+    <a id="downloadLink" class="btn">Download Word File</a>
   </div>
 
-<!-- PDF.js for extracting text -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<!-- Tesseract.js for OCR -->
+<!-- ✅ Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
+</script>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<!-- docx.js for generating Word files -->
-<script src="https://cdn.jsdelivr.net/npm/docx@8.0.1/build/index.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
 
 <script>
 const dropZone=document.getElementById('dropZone');
@@ -38,30 +47,48 @@ const fileElem=document.getElementById('fileElem');
 const browseBtn=document.getElementById('browseBtn');
 const statusEl=document.getElementById('status');
 const downloadLink=document.getElementById('downloadLink');
+const progressContainer=document.querySelector('.progress-container');
+const progressBar=document.getElementById('progressBar');
 
 browseBtn.addEventListener('click',()=>fileElem.click());
 dropZone.addEventListener('dragover',e=>e.preventDefault());
-dropZone.addEventListener('drop',e=>{e.preventDefault();if(e.dataTransfer.files.length)handleFile(e.dataTransfer.files[0]);});
-fileElem.addEventListener('change',e=>{if(e.target.files.length)handleFile(e.target.files[0]);});
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();
+  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+});
+fileElem.addEventListener('change',e=>{
+  if(e.target.files.length) handleFile(e.target.files[0]);
+});
 
 async function handleFile(file){
-  if(!file || file.type!=="application/pdf"){alert("Please select a PDF file");return;}
-  statusEl.textContent="Processing "+file.name+"...";
+  if(!file || file.type!=="application/pdf"){
+    alert("Please select a PDF file");
+    return;
+  }
+  statusEl.textContent="Loading PDF: "+file.name;
+  progressContainer.style.display="block";
+  progressBar.style.width="0%";
 
   const arrayBuffer=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
   let fullText="";
+  const forceOcr=document.getElementById("forceOcr").checked;
 
   for(let i=1;i<=pdf.numPages;i++){
+    const pctOverall=Math.round((i-1)/pdf.numPages*100);
+    progressBar.style.width=pctOverall+"%";
+    statusEl.textContent=`Processing page ${i}/${pdf.numPages}...`;
+
     const page=await pdf.getPage(i);
     const txtContent=await page.getTextContent();
     let pageText=txtContent.items.map(item=>item.str).join(" ");
 
-    if(pageText.trim().length<10){
-      // Page seems scanned → OCR fallback
-      statusEl.textContent=`Page ${i}: running OCR...`;
+    // 🔎 Stricter scanned-PDF detection
+    const letters=pageText.replace(/[^A-Za-z]/g,"").length;
 
-      const viewport=page.getViewport({scale:2.0});
+    if(forceOcr || letters<100){
+      statusEl.textContent=`Page ${i}: OCR starting...`;
+      const viewport=page.getViewport({scale:1.2});
       const canvas=document.createElement("canvas");
       const ctx=canvas.getContext("2d");
       canvas.width=viewport.width;
@@ -69,7 +96,6 @@ async function handleFile(file){
       await page.render({canvasContext:ctx,viewport:viewport}).promise;
       const dataUrl=canvas.toDataURL();
 
-      // 🔥 OCR with progress
       const {data:{text}}=await Tesseract.recognize(dataUrl,"eng",{
         logger:m=>{
           if(m.status==="recognizing text"){
@@ -78,7 +104,6 @@ async function handleFile(file){
           }
         }
       });
-
       pageText=text;
     } else {
       statusEl.textContent=`Page ${i}: text extracted directly`;
@@ -86,11 +111,13 @@ async function handleFile(file){
     fullText+=`\n\n${pageText}`;
   }
 
-  // Build Word doc with docx.js
+  // ✅ Generate Word
   const {Document,Packer,Paragraph,TextRun}=window.docx;
-  const doc=new Document({sections:[{properties:{},children:[
-    new Paragraph({children:[new TextRun(fullText)]})
-  ]}]});
+  const doc=new Document({
+    sections:[{properties:{},children:[
+      new Paragraph({children:[new TextRun(fullText)]})
+    ]}]
+  });
 
   const blob=await Packer.toBlob(doc);
   const url=URL.createObjectURL(blob);
@@ -99,6 +126,7 @@ async function handleFile(file){
   downloadLink.style.display="inline-block";
   downloadLink.textContent="Download "+downloadLink.download;
 
+  progressBar.style.width="100%";
   statusEl.textContent="Conversion finished!";
 }
 </script>
