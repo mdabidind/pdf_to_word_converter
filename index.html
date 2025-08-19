@@ -1,133 +1,147 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>PDF → Word Converter (with OCR)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>PDF → Word Converter</title>
 <style>
-  body{font-family:Arial,Helvetica,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#eef2ff;margin:0}
-  .card{width:820px;max-width:95%;background:white;padding:22px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.08)}
-  .drop{border:3px dashed rgba(99,102,241,.4);padding:30px;border-radius:10px;text-align:center;cursor:pointer;background:#f9f9ff}
+  body{font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#f3f6ff}
+  .card{width:820px;background:white;padding:22px;border-radius:12px;box-shadow:0 8px 20px rgba(0,0,0,.06)}
+  .drop{border:3px dashed rgba(99,102,241,.16);padding:30px;border-radius:10px;text-align:center;cursor:pointer}
   .muted{color:#6b7280;font-size:13px}
+  .progress{height:12px;background:#eef2ff;border-radius:999px;margin-top:12px;overflow:hidden;display:none}
+  .bar{height:100%;width:0%;background:linear-gradient(90deg,#6366f1,#4f46e5);transition:width .2s}
+  .actions{margin-top:14px}
   .btn{padding:8px 14px;border-radius:8px;border:none;background:#4f46e5;color:#fff;cursor:pointer}
-  #downloadLink{display:none;margin-top:10px}
-  .progress-container{width:100%;background:#e5e7eb;border-radius:8px;overflow:hidden;margin-top:15px;height:20px;display:none}
-  .progress-bar{height:100%;width:0;background:#4f46e5;transition:width 0.3s}
+  #downloadBtn{display:none}
 </style>
 </head>
 <body>
   <div class="card">
-    <h2>PDF → Word Converter (OCR Enabled)</h2>
+    <h2>PDF → Word Converter</h2>
 
     <div id="dropZone" class="drop">
       <p class="muted">Drag & drop PDF here or <button id="browseBtn" class="btn" type="button">Browse</button></p>
-      <input id="fileElem" type="file" accept="application/pdf" style="display:none"/>
-      <div style="margin-top:10px;">
-        <label><input type="checkbox" id="forceOcr"> Force OCR (all pages)</label>
-      </div>
-      <div id="status" style="margin-top:10px;color:#333"></div>
-      <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+      <input id="fileElem" type="file" accept="application/pdf" style="display:none" />
+      <div id="filename" class="muted"></div>
     </div>
 
-    <a id="downloadLink" class="btn">Download Word File</a>
+    <div class="progress" id="uploadProgress"><div class="bar" id="uploadBar"></div></div>
+    <div id="status" style="margin-top:10px;color:#333"></div>
+
+    <div class="actions">
+      <button id="downloadBtn" class="btn">Download Converted .docx</button>
+      <button id="convertAgainBtn" class="btn" style="display:none;background:#ddd;color:#111">Convert Again</button>
+    </div>
   </div>
 
-<!-- ✅ Libraries -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.min.js"></script>
 <script>
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.2.67/pdf.worker.min.js";
-</script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+/* ============================================
+   🔧 Backend auto-detection logic
+   ============================================ */
+let SERVER_URL = "";
 
-<script>
-const dropZone=document.getElementById('dropZone');
-const fileElem=document.getElementById('fileElem');
-const browseBtn=document.getElementById('browseBtn');
-const statusEl=document.getElementById('status');
-const downloadLink=document.getElementById('downloadLink');
-const progressContainer=document.querySelector('.progress-container');
-const progressBar=document.getElementById('progressBar');
+// 1) If running on localhost → use local Flask server
+if (location.hostname === "127.0.0.1" || location.hostname === "localhost") {
+  SERVER_URL = "http://127.0.0.1:5000";
+}
+// 2) If running on GitHub Pages or other domain → use same origin (assume backend deployed under same domain)
+else {
+  SERVER_URL = location.origin;  
+  // 👉 If backend is on different server, hardcode here:
+  // SERVER_URL = "https://your-backend-domain.com";
+}
 
-browseBtn.addEventListener('click',()=>fileElem.click());
-dropZone.addEventListener('dragover',e=>e.preventDefault());
-dropZone.addEventListener('drop',e=>{
-  e.preventDefault();
-  if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
-});
-fileElem.addEventListener('change',e=>{
-  if(e.target.files.length) handleFile(e.target.files[0]);
-});
+console.log("Using backend:", SERVER_URL);
 
-async function handleFile(file){
-  if(!file || file.type!=="application/pdf"){
-    alert("Please select a PDF file");
-    return;
-  }
-  statusEl.textContent="Loading PDF: "+file.name;
-  progressContainer.style.display="block";
-  progressBar.style.width="0%";
+/* ============================================
+   UI + Upload Logic
+   ============================================ */
+const dropZone = document.getElementById('dropZone');
+const fileElem = document.getElementById('fileElem');
+const browseBtn = document.getElementById('browseBtn');
+const filenameEl = document.getElementById('filename');
+const uploadProgress = document.getElementById('uploadProgress');
+const uploadBar = document.getElementById('uploadBar');
+const statusEl = document.getElementById('status');
+const downloadBtn = document.getElementById('downloadBtn');
+const convertAgainBtn = document.getElementById('convertAgainBtn');
 
-  const arrayBuffer=await file.arrayBuffer();
-  const pdf=await pdfjsLib.getDocument({data:arrayBuffer}).promise;
-  let fullText="";
-  const forceOcr=document.getElementById("forceOcr").checked;
+browseBtn.addEventListener('click', ()=> fileElem.click());
 
-  for(let i=1;i<=pdf.numPages;i++){
-    const pctOverall=Math.round((i-1)/pdf.numPages*100);
-    progressBar.style.width=pctOverall+"%";
-    statusEl.textContent=`Processing page ${i}/${pdf.numPages}...`;
+dropZone.addEventListener('dragover', e=>{ e.preventDefault(); dropZone.style.opacity=0.9; });
+dropZone.addEventListener('dragleave', e=>{ dropZone.style.opacity=1; });
+dropZone.addEventListener('drop', e=>{ e.preventDefault(); dropZone.style.opacity=1; if(e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
 
-    const page=await pdf.getPage(i);
-    const txtContent=await page.getTextContent();
-    let pageText=txtContent.items.map(item=>item.str).join(" ");
+fileElem.addEventListener('change', e=>{ if(e.target.files.length) handleFile(e.target.files[0]); });
 
-    // 🔎 Stricter scanned-PDF detection
-    const letters=pageText.replace(/[^A-Za-z]/g,"").length;
+function resetUI(){
+  uploadProgress.style.display='none';
+  uploadBar.style.width='0%';
+  statusEl.textContent='';
+  downloadBtn.style.display='none';
+  convertAgainBtn.style.display='none';
+  filenameEl.textContent='';
+}
 
-    if(forceOcr || letters<100){
-      statusEl.textContent=`Page ${i}: OCR starting...`;
-      const viewport=page.getViewport({scale:1.2});
-      const canvas=document.createElement("canvas");
-      const ctx=canvas.getContext("2d");
-      canvas.width=viewport.width;
-      canvas.height=viewport.height;
-      await page.render({canvasContext:ctx,viewport:viewport}).promise;
-      const dataUrl=canvas.toDataURL();
+function handleFile(file){
+  resetUI();
+  if(!file || file.type !== 'application/pdf'){ alert('Please select a PDF file'); return; }
+  filenameEl.textContent = 'Selected: ' + file.name;
 
-      const {data:{text}}=await Tesseract.recognize(dataUrl,"eng",{
-        logger:m=>{
-          if(m.status==="recognizing text"){
-            const pct=Math.round(m.progress*100);
-            statusEl.textContent=`Page ${i}: OCR ${pct}%`;
-          }
-        }
-      });
-      pageText=text;
-    } else {
-      statusEl.textContent=`Page ${i}: text extracted directly`;
+  const form = new FormData();
+  form.append('file', file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', SERVER_URL + '/upload', true);
+
+  xhr.upload.onprogress = function(e){
+    if(e.lengthComputable){
+      uploadProgress.style.display = 'block';
+      const pct = Math.round((e.loaded/e.total)*100);
+      uploadBar.style.width = pct + '%';
+      statusEl.textContent = 'Uploading: ' + pct + '%';
     }
-    fullText+=`\n\n${pageText}`;
-  }
+  };
 
-  // ✅ Generate Word
-  const {Document,Packer,Paragraph,TextRun}=window.docx;
-  const doc=new Document({
-    sections:[{properties:{},children:[
-      new Paragraph({children:[new TextRun(fullText)]})
-    ]}]
-  });
+  xhr.onload = function(){
+    if(xhr.status === 200){
+      let resp;
+      try{ resp = JSON.parse(xhr.responseText); } catch(err){
+        statusEl.textContent = 'Unexpected server response: ' + xhr.responseText; return;
+      }
+      statusEl.textContent = 'Upload successful — conversion started...';
+      pollStatus(resp.id);
+    } else {
+      statusEl.textContent = 'Upload failed: ' + xhr.status + ' — ' + xhr.responseText;
+    }
+  };
 
-  const blob=await Packer.toBlob(doc);
-  const url=URL.createObjectURL(blob);
-  downloadLink.href=url;
-  downloadLink.download=file.name.replace(/\.pdf$/i,"")+".docx";
-  downloadLink.style.display="inline-block";
-  downloadLink.textContent="Download "+downloadLink.download;
+  xhr.onerror = function(){ statusEl.textContent = 'Upload error (network/server)'; }
+  xhr.send(form);
+}
 
-  progressBar.style.width="100%";
-  statusEl.textContent="Conversion finished!";
+let pollTimer = null;
+function pollStatus(id){
+  pollTimer = setInterval(async ()=>{
+    try{
+      const r = await fetch(SERVER_URL + '/status?id=' + encodeURIComponent(id));
+      if(r.status!==200){ statusEl.textContent = 'Status request failed'; return; }
+      const j = await r.json();
+      statusEl.textContent = 'Conversion — ' + j.status + (j.progress?(' : ' + j.progress + '%'):'');
+      if(j.status === 'done'){
+        clearInterval(pollTimer);
+        downloadBtn.style.display='inline-block';
+        downloadBtn.onclick = ()=> { window.location = SERVER_URL + '/download?file=' + encodeURIComponent(j.out); };
+        convertAgainBtn.style.display='inline-block';
+        convertAgainBtn.onclick = ()=> resetUI();
+      }
+      if(j.status === 'error'){
+        clearInterval(pollTimer);
+        statusEl.textContent = 'Conversion failed: ' + (j.message||'unknown');
+      }
+    }catch(err){ console.error(err); statusEl.textContent='Network error while polling'; }
+  }, 1500);
 }
 </script>
 </body>
