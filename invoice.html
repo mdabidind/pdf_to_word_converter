@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bharat Travel Service Invoice</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            width: 800px;
+            margin: 0 auto;
+            padding: 10px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .company-header {
+            text-align: center;
+            border-bottom: 1px solid #000;
+            margin-bottom: 5px;
+        }
+        .company-header h2 {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .columns {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .column {
+            flex: 1;
+            padding: 0 5px;
+        }
+        .column-left {
+            border-right: 1px solid #000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 5px 0;
+        }
+        table td, table th {
+            border: 1px solid #000;
+            padding: 3px 5px;
+            height: 20px;
+        }
+        .underline {
+            text-decoration: underline;
+        }
+        .input-field {
+            border: none;
+            border-bottom: 1px dashed #000;
+            background: transparent;
+            width: 100%;
+            padding: 0;
+            margin: 0;
+            height: 18px;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        .buttons {
+            margin-top: 15px;
+            text-align: center;
+        }
+        button {
+            padding: 5px 15px;
+            margin: 0 5px;
+        }
+        .search-results {
+            margin-top: 15px;
+            border: 1px solid #ddd;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="company-header">
+        <h2>BHARAT TRAVEL SERVICE PHONE NUMBER 033 22302828 033 22359191</h2>
+        <p>ADDRESS 2A TARA CHANDV DUTTA STREET KOLKATA 700073</p>
+    </div>
+
+    <div class="invoice-header">
+        <div>
+            <span class="underline">Invoice no</span> #<input type="text" id="invoiceNo" class="input-field" style="width: 60px;"> 
+            <span class="underline">Date</span> <input type="date" id="invoiceDate" class="input-field" style="width: 90px;">
+        </div>
+        <div>
+            <span class="underline">Order no.</span> <input type="text" id="orderNo" class="input-field" style="width: 60px;"> 
+            <span class="underline">Ord date</span> <input type="date" id="orderDate" class="input-field" style="width: 90px;">
+        </div>
+    </div>
+
+    <div class="columns">
+        <div class="column column-left">
+            <p class="underline">Bill To</p>
+            <p class="underline">Customer</p>
+            <input type="text" id="customerName" class="input-field">
+            <p class="underline">Customer ID#</p>
+            <input type="text" id="customerId" class="input-field">
+            <p class="underline">Address</p>
+            <input type="text" id="customerAddress" class="input-field">
+            <p class="underline">Phone</p>
+            <input type="text" id="customerPhone" class="input-field">
+        </div>
+        <div class="column">
+            <p class="underline">Payment Due</p>
+            <p>Client name</p>
+            <input type="text" id="clientName" class="input-field">
+            <p class="underline">Payment</p>
+            <input type="text" id="payment" class="input-field">
+        </div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">Qty.</th>
+                <th style="width: 80px;">PNR</th>
+                <th>Description</th>
+                <th style="width: 80px;">TICKET FARE</th>
+                <th style="width: 80px;">LESS DISCOUNTE</th>
+                <th style="width: 80px;">NET FARE</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><input type="number" id="qty" value="1" class="input-field" style="width: 30px;"></td>
+                <td><input type="text" id="pnr" class="input-field"></td>
+                <td><input type="text" id="description" class="input-field"></td>
+                <td><input type="number" id="ticketFare" class="input-field calc" style="text-align: right;"></td>
+                <td><input type="number" id="discount" value="0" class="input-field calc" style="text-align: right;"></td>
+                <td style="text-align: right;"><span id="netFare">0.00</span></td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align: right;">TOTAL</td>
+                <td style="text-align: right;"><span id="totalFare">0.00</span></td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align: right;">SERVICE CH</td>
+                <td><input type="number" id="serviceCharge" value="0" class="input-field calc" style="text-align: right;"></td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align: right;">CGST _5_%</td>
+                <td style="text-align: right;"><span id="cgst">0.00</span></td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align: right;">SGST _5_%</td>
+                <td style="text-align: right;"><span id="sgst">0.00</span></td>
+            </tr>
+            <tr>
+                <td colspan="5" style="text-align: right;">Total</td>
+                <td style="text-align: right;"><span id="grandTotal">0000.00</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer">
+        <p class="underline">Thank you for your business!</p>
+    </div>
+
+    <div class="buttons">
+        <button onclick="calculateInvoice()">Calculate</button>
+        <button onclick="saveInvoice()">Save Invoice</button>
+        <button onclick="searchInvoices()">Search</button>
+        <button onclick="printInvoice()">Print</button>
+    </div>
+
+    <div id="searchResults" class="search-results" style="display: none;"></div>
+
+    <script>
+        // Auto-calculate when inputs change
+        document.querySelectorAll('.calc').forEach(input => {
+            input.addEventListener('input', calculateInvoice);
+        });
+
+        function calculateInvoice() {
+            // Get values
+            const ticketFare = parseFloat(document.getElementById('ticketFare').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const serviceCharge = parseFloat(document.getElementById('serviceCharge').value) || 0;
+            
+            // Calculations
+            const netFare = ticketFare - discount;
+            const cgst = serviceCharge * 0.05;
+            const sgst = serviceCharge * 0.05;
+            const total = netFare + serviceCharge + cgst + sgst;
+            
+            // Update display
+            document.getElementById('netFare').textContent = netFare.toFixed(2);
+            document.getElementById('totalFare').textContent = netFare.toFixed(2);
+            document.getElementById('cgst').textContent = cgst.toFixed(2);
+            document.getElementById('sgst').textContent = sgst.toFixed(2);
+            document.getElementById('grandTotal').textContent = total.toFixed(2);
+        }
+
+        function saveInvoice() {
+            const invoice = {
+                invoiceNo: document.getElementById('invoiceNo').value,
+                date: document.getElementById('invoiceDate').value,
+                orderNo: document.getElementById('orderNo').value,
+                orderDate: document.getElementById('orderDate').value,
+                customerName: document.getElementById('customerName').value,
+                customerId: document.getElementById('customerId').value,
+                address: document.getElementById('customerAddress').value,
+                phone: document.getElementById('customerPhone').value,
+                pnr: document.getElementById('pnr').value,
+                description: document.getElementById('description').value,
+                ticketFare: document.getElementById('ticketFare').value,
+                discount: document.getElementById('discount').value,
+                serviceCharge: document.getElementById('serviceCharge').value,
+                total: document.getElementById('grandTotal').textContent,
+                timestamp: new Date().getTime()
+            };
+
+            // Save to localStorage
+            let invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            invoices.push(invoice);
+            localStorage.setItem('invoices', JSON.stringify(invoices));
+            
+            alert('Invoice #' + invoice.invoiceNo + ' saved successfully!');
+        }
+
+        function searchInvoices() {
+            const searchTerm = prompt("Enter customer name, phone, or invoice no:");
+            if (!searchTerm) return;
+            
+            const invoices = JSON.parse(localStorage.getItem('invoices')) || [];
+            const results = invoices.filter(inv => 
+                (inv.customerName && inv.customerName.toLowerCase().includes(searchTerm.toLowerCase())) || 
+                (inv.phone && inv.phone.includes(searchTerm)) || 
+                (inv.invoiceNo && inv.invoiceNo.includes(searchTerm)));
+            
+            let html = '<h3>Search Results</h3>';
+            if (results.length === 0) {
+                html += '<p>No invoices found</p>';
+            } else {
+                html += '<table border="1"><tr><th>Invoice No</th><th>Date</th><th>Customer</th><th>Phone</th><th>Total</th></tr>';
+                results.forEach(inv => {
+                    html += `<tr>
+                        <td>${inv.invoiceNo || ''}</td>
+                        <td>${inv.date || ''}</td>
+                        <td>${inv.customerName || ''}</td>
+                        <td>${inv.phone || ''}</td>
+                        <td>${inv.total || ''}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+            }
+            
+            document.getElementById('searchResults').innerHTML = html;
+            document.getElementById('searchResults').style.display = 'block';
+        }
+
+        function printInvoice() {
+            window.print();
+        }
+
+        // Set today's date as default
+        document.getElementById('invoiceDate').valueAsDate = new Date();
+        document.getElementById('orderDate').valueAsDate = new Date();
+    </script>
+</body>
+</html>
